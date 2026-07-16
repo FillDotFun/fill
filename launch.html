@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Launch a Token — FILL</title>
+  <meta name="description" content="Pick a launchpad, peg a stock, choose a strategy — the Fill engine trades your creator fees automatically." />
+  <meta name="theme-color" content="#000000" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=2" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fill.fun" />
+  <meta property="og:title" content="FILL — Stock-Perp-Backed Token Derivatives on Robinhood Chain" />
+  <meta property="og:description" content="Pons creator fees fuel automated stock perp positions on Ostium. Profits buy back and burn your token. No vaults. No deposits. Pure on-chain." />
+  <meta property="og:image" content="https://fill.fun/logo-512.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@filldotfun" />
+  <meta name="twitter:title" content="FILL — Stock-Perp-Backed Token Derivatives on Robinhood Chain" />
+  <meta name="twitter:description" content="Pons creator fees fuel automated stock perp positions on Ostium. Profits buy back and burn your token. Pure on-chain." />
+  <meta name="twitter:image" content="https://fill.fun/logo-512.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/variables.css" />
+  <link rel="stylesheet" href="/src/styles/reset.css" />
+  <link rel="stylesheet" href="/src/styles/effects.css" />
+  <link rel="stylesheet" href="/src/styles/animations.css" />
+  <link rel="stylesheet" href="/src/styles/components.css" />
+  <link rel="stylesheet" href="/src/styles/layout.css" />
+  <script type="module" src="/src/launch.js"></script>
+</head>
+
+<body>
+
+  <!-- GRID BACKGROUND -->
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <!-- HEADER -->
+  <header class="header" id="site-header">
+    <div class="header-inner">
+      <a href="#hero" class="header-logo">FILL</a>
+
+      <nav class="header-nav" id="header-nav">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+      </nav>
+
+      <a href="/dashboard.html" class="btn btn-primary btn-sm header-cta">DASHBOARD</a>
+
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+    </div>
+  </header>
+
+  
+  <!-- PAGE HERO -->
+  <section class="section" style="padding-top:120px;padding-bottom:24px;">
+    <div class="container">
+      <div class="section-header reveal" style="text-align:left;max-width:none;">
+        <span class="section-label">Create</span>
+        <h1 class="section-title" style="font-size:clamp(2rem,5vw,3.2rem);">Launch a Derivative</h1>
+        <p class="section-subtitle" style="margin-left:0;">Five steps: pick a launchpad, peg a stock, set your strategy, deploy, register. The engine handles everything after that.</p>
+      </div>
+    </div>
+  </section>
+<!-- ═══════════════════════════════════════════════════════
+       LAUNCH WIZARD
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section" id="launch">
+    <div class="container">
+      <div class="wizard reveal" id="launch-wizard">
+        <div class="wizard-progress">
+          <div class="wizard-step-dot active"></div>
+          <div class="wizard-step-dot"></div>
+          <div class="wizard-step-dot"></div>
+          <div class="wizard-step-dot"></div>
+          <div class="wizard-step-dot"></div>
+        </div>
+
+        <!-- Step 1: Launchpad -->
+        <div class="wizard-panel active" id="wizard-step-launchpad">
+          <h3 class="wizard-panel-title">Pick Your Launchpad</h3>
+          <p class="wizard-panel-desc">
+            Where will your token live? Fill works with the top Robinhood Chain launchpads.
+          </p>
+          <div class="launchpad-grid" id="launchpad-grid"></div>
+          <div class="wizard-nav">
+            <div></div>
+            <button class="btn btn-primary btn-sm" data-wizard-next>NEXT</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Stock -->
+        <div class="wizard-panel" id="wizard-step-1">
+          <h3 class="wizard-panel-title">Pick a Stock & Direction</h3>
+          <p class="wizard-panel-desc">
+            Choose the stock your token tracks, the direction, a leverage cap, and how aggressively the bot should trade.
+          </p>
+          <input type="text" id="token-search" class="input" placeholder="Search stocks..." />
+          <div class="token-grid" id="popular-tokens-grid"></div>
+
+          <div class="direction-selector" style="margin-top:24px;display:flex;gap:12px;">
+            <button class="btn btn-primary direction-btn active" id="dir-long" data-direction="long" style="flex:1;font-family:'JetBrains Mono',monospace;">
+              ▲ LONG
+            </button>
+            <button class="btn btn-outline direction-btn" id="dir-short" data-direction="short" disabled style="flex:1;font-family:'JetBrains Mono',monospace;opacity:0.35;cursor:not-allowed;position:relative;">
+              SHORT <span style="font-size:0.55rem;letter-spacing:0.1em;opacity:0.7;margin-left:6px;">COMING SOON</span>
+            </button>
+          </div>
+
+          <div class="leverage-selector" style="margin-top:16px;">
+            <label style="display:block;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Max Leverage <span style="text-transform:none;letter-spacing:0;color:var(--text-tertiary);">— the engine sizes each trade up to this cap based on live signals</span></label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="leverage-options">
+              <button class="btn btn-outline btn-sm leverage-btn" data-lev="5" style="font-family:var(--font-mono);min-width:52px;">5x</button>
+              <button class="btn btn-outline btn-sm leverage-btn" data-lev="10" style="font-family:var(--font-mono);min-width:52px;">10x</button>
+              <button class="btn btn-outline btn-sm leverage-btn" data-lev="20" style="font-family:var(--font-mono);min-width:52px;">20x</button>
+              <button class="btn btn-outline btn-sm leverage-btn" data-lev="30" style="font-family:var(--font-mono);min-width:52px;">30x</button>
+              <button class="btn btn-outline btn-sm leverage-btn" data-lev="40" style="font-family:var(--font-mono);min-width:52px;">40x</button>
+              <button class="btn btn-primary btn-sm leverage-btn active" data-lev="50" style="font-family:var(--font-mono);min-width:52px;">50x</button>
+            </div>
+          </div>
+
+          <div class="strategy-selector" style="margin-top:16px;">
+            <label style="display:block;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Bot Strategy</label>
+            <div class="strategy-options" id="strategy-options"></div>
+          </div>
+
+          <p id="wizard-trade-summary" style="margin-top:10px;font-size:0.75rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
+            Selected: <span id="selected-direction" style="color:var(--accent);">LONG</span> @ up to <span id="selected-leverage" style="color:var(--accent);">50x</span> · <span id="selected-strategy" style="color:var(--accent);">DEGEN</span>
+          </p>
+
+          <div class="wizard-nav">
+            <div></div>
+            <button class="btn btn-primary btn-sm" data-wizard-next>NEXT</button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="wizard-panel" id="wizard-step-2">
+          <h3 class="wizard-panel-title">Name Your Derivative</h3>
+          <p class="wizard-panel-desc">
+            Choose a ticker symbol. This will be the token name on Pons.
+          </p>
+          <input type="text" id="derivative-name" class="input" placeholder="e.g. TURBO_AAPL" maxlength="20" />
+          <div class="wizard-nav">
+            <button class="btn btn-ghost btn-sm" data-wizard-prev>BACK</button>
+            <button class="btn btn-primary btn-sm" data-wizard-next>NEXT</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Setup on the chosen launchpad -->
+        <div class="wizard-panel" id="wizard-step-3">
+          <h3 class="wizard-panel-title" id="setup-title">Setup on Pons</h3>
+          <p class="wizard-panel-desc" id="setup-desc">
+            Create your token with these exact settings.
+          </p>
+          <div class="instruction-steps" id="setup-instructions"></div>
+          <div class="wizard-nav">
+            <button class="btn btn-ghost btn-sm" data-wizard-prev>BACK</button>
+            <button class="btn btn-primary btn-sm" data-wizard-next>NEXT</button>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="wizard-panel" id="wizard-step-4">
+          <h3 class="wizard-panel-title">Verify & Register</h3>
+          <p class="wizard-panel-desc">
+            Paste your token address. We verify the on-chain configuration.
+          </p>
+          <div class="mint-input-group">
+            <input type="text" id="mint-address-input" placeholder="Paste token address (0x…)" />
+            <button class="btn btn-primary btn-sm" id="mint-verify-btn">VERIFY</button>
+          </div>
+          <div class="terminal mt-3" id="verify-terminal" style="min-height:120px;margin-top:20px;"></div>
+          <div class="wizard-nav">
+            <button class="btn btn-ghost btn-sm" data-wizard-prev>BACK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><hr class="divider" /></div>
+
+  
+  <div class="container"><hr class="divider" /></div>
+
+  <!-- FEE FLOW REMINDER -->
+  <section class="section" style="padding-top:0;">
+    <div class="container">
+      <div class="reveal" style="max-width:700px;margin:0 auto;padding:20px 24px;border:1px solid var(--border);border-radius:6px;">
+        <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">What happens after you register</div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.7;">
+          The engine claims your creator fees automatically, trades stock perps on Ostium under the strategy you chose, and uses profits to buy back and burn your token (70%) and FILL (30%). Watch it all live on the <a href="/dashboard.html" style="color:var(--accent);">dashboard</a>.
+        </div>
+      </div>
+    </div>
+  </section>
+<!-- ═══════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <div class="footer-brand">FILL</div>
+          <div class="footer-brand-sub">Stock-perp-backed derivatives on Robinhood Chain</div>
+        </div>
+        <div class="footer-links">
+          <a href="https://x.com/filldotfun" target="_blank">X (Twitter)</a>
+          <a href="/docs.html">Docs</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-wallet">
+          <span class="footer-wallet-label">Protocol</span>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--accent);word-break:break-all;cursor:pointer;" id="footer-wallet-copy" title="Click to copy"></span>
+          <a href="https://robinhoodchain.blockscout.com/address/0x190A656632525803b4a6be64b5B6bc4b3E9323b7" target="_blank" rel="noopener" style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-decoration:none;margin-left:8px;">[RHC]</a>
+          <a href="https://arbiscan.io/address/0x190A656632525803b4a6be64b5B6bc4b3E9323b7" target="_blank" rel="noopener" style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-decoration:none;margin-left:4px;">[ARB]</a>
+        </div>
+        <span class="footer-copy">FILL Protocol 2025-2026. All operations autonomous.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- TICKER BAR -->
+  <div class="ticker-bar" id="ticker-bar"></div>
+
+  
+</body>
+</html>

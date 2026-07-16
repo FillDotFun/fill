@@ -1,0 +1,43 @@
+/* ═══════════════════════════════════════════════════════════
+   RESET + BASE
+   ═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* Data reads with aligned digits everywhere it's mono */
+.mono, [class*="mono"], .font-mono, table, code, kbd {
+  font-variant-numeric: tabular-nums;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+ul, ol { list-style: none; }
+img, video, canvas { display: block; max-width: 100%; }
+input, select, textarea { font: inherit; color: inherit; background: transparent; border: none; outline: none; }
+
+::selection { background: rgba(0, 200, 5, 0.28); color: #fff; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--inset); }
+::-webkit-scrollbar-thumb {
+  background: #202b3a;
+  border-radius: 6px;
+  border: 2px solid var(--inset);
+}
+::-webkit-scrollbar-thumb:hover { background: #2c3a4d; }

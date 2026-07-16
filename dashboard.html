@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — FILL</title>
+  <meta name="description" content="Live positions, registered derivatives, trade history and engine activity for the Fill protocol." />
+  <meta name="theme-color" content="#000000" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=2" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fill.fun" />
+  <meta property="og:title" content="FILL — Stock-Perp-Backed Token Derivatives on Robinhood Chain" />
+  <meta property="og:description" content="Pons creator fees fuel automated stock perp positions on Ostium. Profits buy back and burn your token. No vaults. No deposits. Pure on-chain." />
+  <meta property="og:image" content="https://fill.fun/logo-512.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@filldotfun" />
+  <meta name="twitter:title" content="FILL — Stock-Perp-Backed Token Derivatives on Robinhood Chain" />
+  <meta name="twitter:description" content="Pons creator fees fuel automated stock perp positions on Ostium. Profits buy back and burn your token. Pure on-chain." />
+  <meta name="twitter:image" content="https://fill.fun/logo-512.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/variables.css" />
+  <link rel="stylesheet" href="/src/styles/reset.css" />
+  <link rel="stylesheet" href="/src/styles/effects.css" />
+  <link rel="stylesheet" href="/src/styles/animations.css" />
+  <link rel="stylesheet" href="/src/styles/components.css" />
+  <link rel="stylesheet" href="/src/styles/layout.css" />
+  <script type="module" src="/src/app.js"></script>
+</head>
+
+<body>
+
+  <!-- GRID BACKGROUND -->
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <!-- HEADER -->
+  <header class="header" id="site-header">
+    <div class="header-inner">
+      <a href="#hero" class="header-logo">FILL</a>
+
+      <nav class="header-nav" id="header-nav">
+        <a href="/" class="nav-link">Home</a>
+        <a href="#positions" class="nav-link">Positions</a>
+        <a href="#derivatives" class="nav-link">Tokens</a>
+        <a href="#activity" class="nav-link">Activity</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+      </nav>
+
+      <a href="/launch.html" class="btn btn-primary btn-sm header-cta">LAUNCH TOKEN</a>
+
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+    </div>
+  </header>
+
+  
+  <!-- PAGE HERO -->
+  <section class="section" style="padding-top:120px;padding-bottom:24px;">
+    <div class="container">
+      <div class="section-header reveal" style="text-align:left;max-width:none;">
+        <span class="section-label">Live</span>
+        <h1 class="section-title" style="font-size:clamp(2rem,5vw,3.2rem);">Protocol Dashboard</h1>
+        <p class="section-subtitle" style="margin-left:0;">Everything the engine does, in real time — verifiable on-chain on both networks.</p>
+      </div>
+    </div>
+  </section>
+<!-- ═══════════════════════════════════════════════════════
+       PROTOCOL STATS
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section" id="stats">
+    <div class="container">
+      <div class="stat-tiles reveal stagger">
+        <div class="stat-tile">
+          <div class="stat-tile-value accent"><span data-counter="derivatives">0</span></div>
+          <div class="stat-tile-label">Registered Tokens</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-value" id="pnl-value"><span data-counter="pnl">0</span><span class="unit">USD</span></div>
+          <div class="stat-tile-label">Net Perp PnL</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-value"><span data-counter="tradingBalance">0</span><span class="unit">USDC</span></div>
+          <div class="stat-tile-label">Trading Balance</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-value"><span data-counter="walletBalance">0</span><span class="unit">ETH</span></div>
+          <div class="stat-tile-label">Fee Wallet</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-value"><span data-counter="buybackEth">0</span><span class="unit">ETH</span></div>
+          <div class="stat-tile-label">Buyback + Burn</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-value"><span data-counter="buybacks">0</span></div>
+          <div class="stat-tile-label">Buybacks Executed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><hr class="divider" /></div>
+
+  
+  <div class="container"><hr class="divider" /></div>
+<!-- ═══════════════════════════════════════════════════════
+       TRADE HISTORY
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section" id="positions">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">On-chain verified</span>
+        <h2 class="section-title">Trade History</h2>
+        <p class="section-subtitle">Live stock perp trading activity from the protocol account on Ostium.</p>
+      </div>
+
+      <!-- Open Positions -->
+      <div id="open-positions" class="reveal" style="max-width:1000px;margin:0 auto 2rem auto;">
+        <h3 style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;">Open Positions</h3>
+        <div id="open-positions-grid" style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
+          <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:0.8rem;">Loading positions...</div>
+        </div>
+      </div>
+
+      <div class="reveal" style="overflow-x:auto;max-width:1000px;margin:0 auto;">
+        <table id="trade-history-table" style="width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:0.75rem;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border-strong);color:var(--text-muted);text-transform:uppercase;font-size:0.6rem;letter-spacing:0.1em;">
+              <th style="padding:12px 8px;text-align:left;">Market</th>
+              <th style="padding:12px 8px;text-align:left;">Action</th>
+              <th style="padding:12px 8px;text-align:right;">Size</th>
+              <th style="padding:12px 8px;text-align:right;">PnL</th>
+              <th style="padding:12px 8px;text-align:right;">Fee</th>
+              <th style="padding:12px 8px;text-align:right;">Time</th>
+              <th style="padding:12px 8px;text-align:center;">TX</th>
+            </tr>
+          </thead>
+          <tbody id="trade-history-body">
+            <tr><td colspan="7" style="padding:32px;text-align:center;color:var(--text-muted);">Loading trades...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><hr class="divider" /></div>
+
+  
+  <div class="container"><hr class="divider" /></div>
+<!-- ═══════════════════════════════════════════════════════
+       DASHBOARD
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section" id="derivatives">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Live positions</span>
+        <h2 class="section-title">Active Derivatives</h2>
+        <p class="section-subtitle">
+          Real-time data for all registered Fill tokens.
+        </p>
+      </div>
+
+      <div class="reveal">
+        <div class="dashboard-controls">
+          <input type="text" id="dashboard-search" class="dashboard-search" placeholder="Search tokens..." />
+          <select id="dashboard-sort" class="dashboard-sort">
+            <option value="pnl">Sort: PnL</option>
+            <option value="sizeUsd">Sort: Position Size</option>
+            <option value="leverage">Sort: Leverage</option>
+            <option value="deployedUsd">Sort: Collateral</option>
+          </select>
+        </div>
+
+        <table class="dashboard-table">
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Stock</th>
+              <th>Direction</th>
+              <th>Leverage</th>
+              <th>Entry</th>
+              <th>PnL</th>
+              <th>Size</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-body">
+            <tr>
+              <td colspan="7" class="empty-state">
+                No tokens registered yet. Be the first to launch.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><hr class="divider" /></div>
+
+  
+  <div class="container"><hr class="divider" /></div>
+<!-- ═══════════════════════════════════════════════════════
+       LIVE ACTIVITY FEED
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section" id="activity">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Engine log</span>
+        <h2 class="section-title">Live Activity</h2>
+        <p class="section-subtitle">
+          Every fee claim, position, and buyback the engine executes — verifiable on-chain.
+        </p>
+      </div>
+
+      <div id="activity-feed" class="reveal" style="max-width:760px;margin:0 auto;display:grid;gap:8px;"></div>
+    </div>
+  </section>
+
+  <div class="container"><hr class="divider" /></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <div class="footer-brand">FILL</div>
+          <div class="footer-brand-sub">Stock-perp-backed derivatives on Robinhood Chain</div>
+        </div>
+        <div class="footer-links">
+          <a href="https://x.com/filldotfun" target="_blank">X (Twitter)</a>
+          <a href="/docs.html">Docs</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-wallet">
+          <span class="footer-wallet-label">Protocol</span>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--accent);word-break:break-all;cursor:pointer;" id="footer-wallet-copy" title="Click to copy"></span>
+          <a href="https://robinhoodchain.blockscout.com/address/0x190A656632525803b4a6be64b5B6bc4b3E9323b7" target="_blank" rel="noopener" style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-decoration:none;margin-left:8px;">[RHC]</a>
+          <a href="https://arbiscan.io/address/0x190A656632525803b4a6be64b5B6bc4b3E9323b7" target="_blank" rel="noopener" style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-decoration:none;margin-left:4px;">[ARB]</a>
+        </div>
+        <span class="footer-copy">FILL Protocol 2025-2026. All operations autonomous.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- TICKER BAR -->
+  <div class="ticker-bar" id="ticker-bar"></div>
+
+  <!-- TOKEN DETAIL MODAL -->
+  <div class="modal-overlay" id="token-modal" hidden>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Token Details</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="copy-btn" id="modal-copy-link" title="Copy a shareable link to this token">COPY LINK</button>
+          <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- Direction Banner -->
+        <div id="modal-direction-banner" style="padding:12px 16px;border:1px solid var(--accent);border-radius:2px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);">
+          <div>
+            <span id="modal-direction-arrow" style="font-size:1.5rem;margin-right:8px;">▲</span>
+            <span id="modal-direction-text" style="font-size:1.1rem;font-weight:700;color:var(--accent);">LONG</span>
+            <span id="modal-market-text" style="margin-left:8px;color:var(--text-muted);font-size:0.85rem;">AAPL-PERP</span>
+          </div>
+          <div>
+            <span id="modal-strategy-text" style="color:var(--text-muted);font-size:0.65rem;letter-spacing:0.08em;margin-right:12px;"></span>
+            <span style="color:var(--text-muted);font-size:0.75rem;">MAX LEV</span>
+            <span id="modal-leverage-text" style="color:var(--accent);font-size:1.3rem;font-weight:700;margin-left:6px;">50x</span>
+          </div>
+        </div>
+
+        <!-- Position Stats Grid -->
+        <div class="modal-stats-grid" style="grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div class="modal-stat-label">Entry Price</div>
+            <div class="modal-stat-value" id="modal-entry" style="font-size:1.3rem;">--</div>
+          </div>
+          <div>
+            <div class="modal-stat-label">Position Size</div>
+            <div class="modal-stat-value" id="modal-size" style="font-size:1.3rem;">--</div>
+          </div>
+          <div>
+            <div class="modal-stat-label">Collateral</div>
+            <div class="modal-stat-value" id="modal-collateral" style="font-size:1.3rem;">--</div>
+          </div>
+          <div>
+            <div class="modal-stat-label">Unrealised PnL</div>
+            <div class="modal-stat-value" id="modal-pnl" style="font-size:1.3rem;">--</div>
+          </div>
+          <div>
+            <div class="modal-stat-label">Deployed ETH</div>
+            <div class="modal-stat-value" id="modal-deployed">--</div>
+          </div>
+          <div>
+            <div class="modal-stat-label">Status</div>
+            <div class="modal-stat-value" id="modal-engine-text">--</div>
+          </div>
+        </div>
+
+        <!-- Pegged Stock Chart -->
+        <div style="margin-top:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div class="modal-stat-label" style="margin-bottom:0;" id="modal-chart-label">Chart</div>
+            <div class="range-tabs" id="modal-range-tabs">
+              <button class="range-tab active" data-range="1d">1D</button>
+              <button class="range-tab" data-range="5d">5D</button>
+              <button class="range-tab" data-range="1mo">1M</button>
+              <button class="range-tab" data-range="6mo">6M</button>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:4px;padding:10px;background:var(--inset);position:relative;">
+            <canvas id="modal-chart-canvas" style="width:100%;height:130px;display:block;cursor:crosshair;"></canvas>
+          </div>
+        </div>
+
+        <!-- Pons Token Market Data -->
+        <div style="margin-top:20px;">
+          <div class="modal-stat-label" style="margin-bottom:8px;">Token Market Data</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div>
+              <div class="modal-stat-label" style="font-size:0.55rem;">Price</div>
+              <div class="modal-stat-value" id="modal-token-price" style="font-size:1rem;">--</div>
+            </div>
+            <div>
+              <div class="modal-stat-label" style="font-size:0.55rem;">FDV</div>
+              <div class="modal-stat-value" id="modal-token-fdv" style="font-size:1rem;">--</div>
+            </div>
+            <div>
+              <div class="modal-stat-label" style="font-size:0.55rem;">24h Volume</div>
+              <div class="modal-stat-value" id="modal-token-vol" style="font-size:1rem;">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fee Split -->
+        <div style="margin-top:20px;">
+          <div class="modal-stat-label" style="margin-bottom:8px;">Fee Split</div>
+          <div class="fee-bar">
+            <div class="fee-seg fee-seg-perps" style="width:70%"></div>
+            <div class="fee-seg fee-seg-fill" style="width:30%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--accent);">70% Stock Perps</span>
+            <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--accent-secondary);">30% FILL</span>
+          </div>
+        </div>
+
+        <!-- Available Markets -->
+        <div style="margin-top:20px;">
+          <div class="modal-stat-label" style="margin-bottom:8px;">Available Markets</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;" id="modal-markets">
+            <span style="padding:3px 10px;border:1px solid var(--border-accent);border-radius:2px;font-family:var(--font-mono);font-size:0.65rem;color:var(--accent);">AAPL-PERP</span>
+            <span style="padding:3px 10px;border:1px solid var(--border-accent);border-radius:2px;font-family:var(--font-mono);font-size:0.65rem;color:var(--accent);">TSLA-PERP</span>
+            <span style="padding:3px 10px;border:1px solid var(--border-accent);border-radius:2px;font-family:var(--font-mono);font-size:0.65rem;color:var(--accent);">NVDA-PERP</span>
+            <span style="padding:3px 10px;border:1px solid var(--border-accent);border-radius:2px;font-family:var(--font-mono);font-size:0.65rem;color:var(--accent);">MSFT-PERP</span>
+            <span style="padding:3px 10px;border:1px solid var(--border-accent);border-radius:2px;font-family:var(--font-mono);font-size:0.65rem;color:var(--accent);">HOOD-PERP</span>
+          </div>
+        </div>
+
+        <!-- Buyback & Burn Stats -->
+        <div style="margin-top:20px;">
+          <div class="modal-stat-label" style="margin-bottom:8px;">Buyback & Burn</div>
+          <div class="modal-stat-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div class="modal-stat-label" style="font-size:0.55rem;">ETH Spent (Source Buyback)</div>
+              <div class="modal-stat-value" id="modal-source-buyback-sol" style="font-size:1rem;">--</div>
+            </div>
+            <div>
+              <div class="modal-stat-label" style="font-size:0.55rem;">Tokens Burned (Source)</div>
+              <div class="modal-stat-value" id="modal-source-tokens-burned" style="font-size:1rem;color:var(--red, #ff3366);">--</div>
+            </div>
+            <div>
+              <div class="modal-stat-label" style="font-size:0.55rem;">ETH Spent (FILL Buyback)</div>
+              <div class="modal-stat-value" id="modal-fill-buyback-sol" style="font-size:1rem;">--</div>
+            </div>
+            <div>
+              <div class="modal-stat-label" style="font-size:0.55rem;">FILL Burned</div>
+              <div class="modal-stat-value" id="modal-fill-tokens-burned" style="font-size:1rem;color:var(--red, #ff3366);">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Token Address -->
+        <div style="margin-top:20px;">
+          <div class="modal-stat-label" style="margin-bottom:8px;">Token Address</div>
+          <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);word-break:break-all;" id="modal-mint">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

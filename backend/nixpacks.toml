@@ -1,0 +1,12 @@
+# Force a Node backend build (Railway otherwise auto-detected the repo-root
+# Vite frontend as a static site on a prior deploy).
+providers = ['node']
+
+[phases.setup]
+nixPkgs = ['nodejs_20']
+
+[phases.install]
+cmds = ['npm ci --omit=dev']
+
+[start]
+cmd = 'node server.js'

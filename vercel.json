@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://fill-backend-production.up.railway.app/api/:path*"
+    }
+  ],
+  "cleanUrls": true
+}

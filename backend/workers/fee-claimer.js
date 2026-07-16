@@ -1,0 +1,116 @@
+import logger from '../utils/logger.js';
+import config from '../config.js';
+import * as db from '../db/firebase.js';
+import { getAllTokens } from '../db/firebase.js';
+import * as pons from '../services/pons.js';
+import * as notifier from '../services/notifier.js';
+import { sleep } from '../utils/helpers.js';
+
+// ---------------------------------------------------------------------------
+// Fee claiming for Pons launchpad tokens (Robinhood Chain).
+//
+// Pons tokens route creator fees to their designated creator wallet — for
+// Fill tokens that wallet is the protocol wallet. Fees accrue in two
+// places:
+//   1. Locked Uniswap V3 LP in the Pons locker — post-graduation trading
+//      fees (the big money)
+//   2. Pons factory — pre-graduation bonding curve fees (small)
+//
+// pons.claimFees() tries both and reports the ETH actually received.
+// ---------------------------------------------------------------------------
+
+// Minimum claim threshold (ETH) — below this, gas isn't worth it
+const MIN_CLAIM_ETH = 0.0005;
+
+/**
+ * Run a fee-claiming cycle for a single token.
+ */
+export async function claimFeesForToken(tokenAddress, launchpadId = null) {
+  try {
+    if (!config.protocolWallet) {
+      logger.debug('No protocol wallet loaded, skipping claims');
+      return null;
+    }
+
+    // Check claimable balance first (view call, free)
+    const claimable = await pons.getUnclaimedBalance(tokenAddress, launchpadId);
+    if (claimable > 0 && claimable < MIN_CLAIM_ETH) {
+      logger.debug('Fees below threshold', { token: tokenAddress, claimable: claimable.toFixed(6) });
+      return null;
+    }
+
+    // Claim (the service static-calls first, so nothing is wasted if empty)
+    const result = await pons.claimFees(tokenAddress, launchpadId);
+    if (!result) return null;
+
+    const { txHash, feesClaimed } = result;
+
+    if (feesClaimed <= 0) {
+      logger.info('Claim tx sent but 0 fees received', { token: tokenAddress, txHash });
+      return null;
+    }
+
+    // Compute split (70% perps, 30% buyback)
+    const split = {
+      positionAmount: feesClaimed * config.FEE_SPLIT.positionFund,
+      buybackAmount: feesClaimed * config.FEE_SPLIT.buyback,
+    };
+
+    // Persist run
+    const runId = await db.addRun({
+      tokenAddress,
+      feesClaimed,
+      txHash,
+    });
+
+    // Persist split
+    await db.addSplit({
+      runId,
+      tokenAddress,
+      ...split,
+    });
+
+    logger.info('Fees claimed and recorded', {
+      token: tokenAddress,
+      feesClaimed: feesClaimed.toFixed(6),
+      positionAmount: split.positionAmount.toFixed(6),
+      buybackAmount: split.buybackAmount.toFixed(6),
+      runId, txHash,
+    });
+
+    notifier.notifyFeesClaimed({ token: tokenAddress, feesClaimed, txHash });
+
+    return { runId, feesClaimed, split, txHash };
+  } catch (err) {
+    logger.error('Fee claim failed', { token: tokenAddress, error: err.message, stack: err.stack });
+    return null;
+  }
+}
+
+/**
+ * Run fee claiming for ALL active tokens.
+ */
+export async function claimAllFees() {
+  const tokens = await getAllTokens();
+  const active = tokens.filter((t) => t.status === 'active');
+
+  if (active.length === 0) {
+    logger.info('No active tokens to claim fees for');
+    return [];
+  }
+
+  const results = [];
+  for (let i = 0; i < active.length; i++) {
+    const token = active[i];
+    const result = await claimFeesForToken(token.id || token.address, token.launchpad || null);
+    if (result) results.push(result);
+
+    // Rate limit: 1s delay between tokens to avoid RPC throttling
+    if (i < active.length - 1) {
+      await sleep(1000);
+    }
+  }
+
+  logger.info(`Fee claim cycle complete: ${results.length}/${active.length} tokens claimed`);
+  return results;
+}
