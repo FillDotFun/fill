@@ -44,6 +44,17 @@ const CLAIMABLE_VIEW_ABIS = [
   'function pendingFees(address token) view returns (uint256)',
 ];
 
+/**
+ * True if an ABI-encoded hex blob (calldata, log data, or a topic) contains
+ * the address as a left-padded 32-byte word — i.e. it was passed as a real
+ * parameter, not a random byte coincidence.
+ */
+export function hexMentionsAddress(hexBlob, address) {
+  if (!hexBlob || !address) return false;
+  const padded = '0'.repeat(24) + address.toLowerCase().replace(/^0x/, '');
+  return hexBlob.toLowerCase().includes(padded);
+}
+
 // ---------------------------------------------------------------------------
 // Launchpad registry helpers
 // ---------------------------------------------------------------------------
@@ -148,8 +159,11 @@ export async function verifyCreatorConfig(tokenAddress, launchpadId = null) {
     }
   }
 
-  // Fallback: the wallet that sent the launch transaction (works for pads
-  // where fee rights follow the launcher)
+  // Fallback: inspect the launch transaction itself. Pons exposes no
+  // fee-wallet getter, but the Creator-wallet field is ABI-encoded into the
+  // launch calldata (and echoed in the launch event), so finding the
+  // protocol address there proves fees route to us. The sender check runs
+  // last — it covers pads where fee rights simply follow the launcher.
   try {
     const res = await fetch(`${config.EXPLORER_URL}/api/v2/addresses/${tokenAddress}`, {
       headers: { accept: 'application/json' },
@@ -159,6 +173,21 @@ export async function verifyCreatorConfig(tokenAddress, launchpadId = null) {
       const txHash = data.creation_transaction_hash;
       if (txHash) {
         const tx = await provider.getTransaction(txHash);
+
+        if (hexMentionsAddress(tx?.data, config.PROTOCOL_ADDRESS)) {
+          logger.info('Creator wallet verified from launch calldata', { token: tokenAddress, launchpad: lp.id });
+          return { valid: true, creator: config.PROTOCOL_ADDRESS, launchpad: lp.id, source: 'launch-calldata' };
+        }
+
+        const receipt = await provider.getTransactionReceipt(txHash);
+        for (const log of receipt?.logs || []) {
+          if (hexMentionsAddress(log.data, config.PROTOCOL_ADDRESS) ||
+              (log.topics || []).some((t) => hexMentionsAddress(t, config.PROTOCOL_ADDRESS))) {
+            logger.info('Creator wallet verified from launch event', { token: tokenAddress, launchpad: lp.id });
+            return { valid: true, creator: config.PROTOCOL_ADDRESS, launchpad: lp.id, source: 'launch-event' };
+          }
+        }
+
         const launcher = tx?.from?.toLowerCase();
         if (launcher === config.PROTOCOL_ADDRESS.toLowerCase()) {
           return { valid: true, creator: config.PROTOCOL_ADDRESS, launchpad: lp.id, source: 'launch-tx-sender' };
@@ -166,7 +195,7 @@ export async function verifyCreatorConfig(tokenAddress, launchpadId = null) {
         return {
           valid: false,
           launchpad: lp.id,
-          reason: `Token was launched by ${tx?.from}, and ${lp.name}'s fee wallet couldn't be read on-chain. ${lp.howTo}`,
+          reason: `The launch transaction names neither the protocol wallet as Creator wallet nor as launcher (launched by ${tx?.from}). ${lp.howTo}`,
         };
       }
     }

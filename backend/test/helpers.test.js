@@ -44,3 +44,20 @@ test('timestamps', () => {
   assert.ok(!Number.isNaN(Date.parse(nowISO())));
   assert.ok(Math.abs(nowUnix() - Date.now() / 1000) < 2);
 });
+
+// ---------------------------------------------------------------------------
+// Launch-calldata verification helper — regression for the false rejection
+// of correctly-configured Pons launches (Creator wallet set, but Pons has
+// no on-chain getter; the proof lives in the launch tx calldata/events).
+// ---------------------------------------------------------------------------
+import { hexMentionsAddress } from '../services/pons.js';
+
+test('hexMentionsAddress matches ABI-encoded address words only', () => {
+  const addr = '0x2cdE129778a416279d9f6F1E9B5c3abb302D1CD7';
+  const padded = '0'.repeat(24) + addr.slice(2).toLowerCase();
+  assert.equal(hexMentionsAddress('0x1234' + padded + 'beef', addr), true, 'padded word matches');
+  assert.equal(hexMentionsAddress('0x' + addr.slice(2).toLowerCase(), addr), false, 'unpadded raw hex is not a parameter');
+  assert.equal(hexMentionsAddress('', addr), false);
+  assert.equal(hexMentionsAddress(null, addr), false);
+  assert.equal(hexMentionsAddress('0xdead', null), false);
+});
