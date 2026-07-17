@@ -129,9 +129,20 @@ test('POST /tokens/register rejects tokens whose fees do not route to the protoc
   assert.equal(d.error, 'On-chain verification failed');
 });
 
-test('POST /admin/trigger fails closed when no ADMIN_API_KEY is configured', async () => {
+test('POST /admin/trigger rejects unauthenticated calls', async () => {
   const r = await fetch(`${BASE}/admin/trigger/fee-claimer`, { method: 'POST' });
-  assert.equal(r.status, 403);
+  // 403 = fail-closed (no ADMIN_API_KEY configured); 401 = key configured
+  // but caller unauthenticated. Both are correct rejections — what must
+  // never happen is a 2xx without the key.
+  assert.ok([401, 403].includes(r.status), `expected 401/403, got ${r.status}`);
+});
+
+test('POST /admin/trigger rejects a WRONG key', async () => {
+  const r = await fetch(`${BASE}/admin/trigger/fee-claimer`, {
+    method: 'POST',
+    headers: { 'x-admin-key': 'definitely-not-the-key' },
+  });
+  assert.ok([401, 403].includes(r.status), `expected 401/403, got ${r.status}`);
 });
 
 test('GET /chart/stock validates symbols', async () => {
