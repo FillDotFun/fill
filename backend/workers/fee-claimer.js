@@ -71,6 +71,21 @@ export async function claimFeesForToken(tokenAddress, launchpadId = null) {
       ...split,
     });
 
+    // Per-token fee ledger on the token doc itself: cumulative fees earned
+    // and the trading budget (the 70% share, kept in ETH — converted to USD
+    // at entry time so no price dependency here). This is what caps how
+    // much capital this token's positions may use.
+    try {
+      const tokenDoc = await db.getToken(tokenAddress);
+      await db.setToken(tokenAddress, {
+        ...tokenDoc,
+        feesClaimedEth: (tokenDoc?.feesClaimedEth || 0) + feesClaimed,
+        feeBudgetEth: (tokenDoc?.feeBudgetEth || 0) + split.positionAmount,
+      });
+    } catch (ledgerErr) {
+      logger.warn('Per-token fee ledger update failed', { token: tokenAddress, error: ledgerErr.message });
+    }
+
     logger.info('Fees claimed and recorded', {
       token: tokenAddress,
       feesClaimed: feesClaimed.toFixed(6),

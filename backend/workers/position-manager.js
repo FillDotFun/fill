@@ -6,6 +6,7 @@ import { getAllTokens } from '../db/firebase.js';
 import { retry, sleep } from '../utils/helpers.js';
 import { shouldEnterNow, shouldExitNow, getSession } from '../services/market-signal.js';
 import { resolveStrategy, favorableExtreme, pullbackFrom } from '../services/strategies.js';
+import { getEthPrice } from '../services/uniswap.js';
 import * as notifier from '../services/notifier.js';
 
 const RTH_SESSIONS = ['market-open', 'power-hour', 'regular-hours'];
@@ -621,7 +622,22 @@ export async function managePositionForToken(tokenAddress) {
 
     // Cap trading capital, split across active markets (USDC)
     const capitalPerMarket = config.RISK.maxTradingCapitalUsd / (activeMarkets + 1); // +1 for this new position
-    const deployAmount = Math.min(available, capitalPerMarket);
+
+    // Per-token fee budget: a token may only deploy what its own creator
+    // fees have earned (the 70% share, accrued in ETH by the fee-claimer,
+    // converted to USD here). No fees earned -> no capital used.
+    const budgetEth = token.feeBudgetEth || 0;
+    const ethPrice = await getEthPrice();
+    const budgetUsd = ethPrice > 0 ? budgetEth * ethPrice : 0;
+    if (budgetUsd < config.RISK.minDeployUsd) {
+      logger.info('Token fee budget below minimum deploy — skipping entry', {
+        token: tokenAddress, budgetEth: budgetEth.toFixed(6),
+        budgetUsd: budgetUsd.toFixed(2), minDeployUsd: config.RISK.minDeployUsd,
+      });
+      return null;
+    }
+
+    const deployAmount = Math.min(available, capitalPerMarket, budgetUsd);
     // Leverage = signal suggestion, bounded by the strategy mode's range AND
     // the cap the creator chose at registration (the tightest limit wins)
     const userCap = token.leverage || 50;
