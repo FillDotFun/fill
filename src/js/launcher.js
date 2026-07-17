@@ -108,11 +108,27 @@ function renderSetupInstructions() {
       <button class="copy-btn" data-copy>COPY</button>
     </div>`;
 
+  // Real screenshots of the launchpad UI, framed as terminal windows.
+  // Click opens the full-size capture in a new tab.
+  const fig = (src, site, caption) => `
+    <figure class="guide-fig">
+      <div class="guide-fig-bar">
+        <span class="term-dots"><i></i><i></i><i></i></span>
+        <span class="guide-fig-title">${site}</span>
+        <span class="guide-fig-zoom">click to enlarge ⤢</span>
+      </div>
+      <a href="${src}" target="_blank" rel="noopener"><img src="${src}" alt="${caption}" loading="lazy" /></a>
+      <figcaption>${caption}</figcaption>
+    </figure>`;
+
   const steps = lp.id === 'pons'
     ? [
-        `Go to <strong>pons.family</strong> and launch your token. Under <strong>Advanced</strong>, set the <strong>Creator wallet</strong> to:${walletRow}`,
+        `Go to <strong>pons.family → Create</strong> and fill in your token's name, ticker, description and image.
+         ${fig('/guide/pons-form.png', 'pons.family/launchpad/create', 'The Pons launch form — fill the basics here. The 0.0005 ETH launch fee is shown on the right.')}`,
+        `Open the <strong>Advanced</strong> section and paste the protocol wallet into the <strong>Creator wallet</strong> field:${walletRow}
+         ${fig('/guide/pons-advanced.png', 'pons.family — Advanced section', 'Exactly like this — the address shown IS the protocol wallet. Pons’ own hint confirms it: “receives the creator share of trading fees (70%)”.')}`,
         `Complete the launch (0.0005 ETH fee). At <strong>4.2 ETH raised</strong> your token graduates to a locked Uniswap pool — creator fees flow to the engine forever.`,
-        `Copy the <strong>token address</strong> (0x…) of your newly created token.`,
+        `Copy your new <strong>token address</strong> (0x…) and paste it in the next step to verify &amp; register.`,
       ]
     : [
         `Go to <strong>${lp.url.replace('https://', '')}</strong> and launch your token <strong>from the protocol wallet</strong> (or transfer its fee rights to it):${walletRow}`,

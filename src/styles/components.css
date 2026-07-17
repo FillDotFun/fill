@@ -615,6 +615,55 @@ section[id], #markets, #activity { scroll-margin-top: 72px; }
 .launchpad-tile-status { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); }
 .launchpad-tile.soon .launchpad-tile-status { color: var(--text-tertiary); }
 
+/* ── Launchpad guide screenshots (wizard setup step) ── */
+.guide-fig {
+  margin: 14px 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.guide-fig-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--panel-head);
+  border-bottom: 1px solid var(--border);
+}
+.guide-fig-title {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.guide-fig-zoom {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+.guide-fig a { display: block; }
+.guide-fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-bottom: 1px solid var(--border);
+  transition: opacity var(--speed-fast);
+}
+.guide-fig a:hover img { opacity: 0.88; }
+.guide-fig figcaption {
+  padding: 9px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
 /* ── Strategy selector (wizard) ── */
 .strategy-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
 .strategy-btn {
