@@ -9,11 +9,11 @@ test('ethToWei / weiToEth round-trip', () => {
 });
 
 test('shortenKey shortens addresses', () => {
-  const addr = '0x190A656632525803b4a6be64b5B6bc4b3E9323b7';
+  const addr = '0x2cdE129778a416279d9f6F1E9B5c3abb302D1CD7';
   const short = shortenKey(addr);
   assert.ok(short.length < addr.length);
-  assert.ok(short.startsWith('0x190A'));
-  assert.ok(short.endsWith('23b7'));
+  assert.ok(short.startsWith('0x2cdE'));
+  assert.ok(short.endsWith('1CD7'));
 });
 
 test('retry succeeds after transient failures', async () => {

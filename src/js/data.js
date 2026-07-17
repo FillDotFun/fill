@@ -4,7 +4,7 @@
 
 // Protocol wallet — creators point their Pons "Creator wallet" field here.
 // Same address holds USDC trading collateral on Arbitrum (Ostium).
-export const PROTOCOL_WALLET = '0x190A656632525803b4a6be64b5B6bc4b3E9323b7';
+export const PROTOCOL_WALLET = '0x2cdE129778a416279d9f6F1E9B5c3abb302D1CD7';
 
 export const EXPLORER_URL = 'https://robinhoodchain.blockscout.com';
 export const ARBITRUM_EXPLORER_URL = 'https://arbiscan.io';
