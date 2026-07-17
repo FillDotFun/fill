@@ -52,9 +52,10 @@ function dismissToast(toast) {
   if (toast._dismissed) return;
   toast._dismissed = true;
   toast.classList.add('toast-exit');
-  toast.addEventListener('animationend', () => {
-    toast.remove();
-  });
+  toast.addEventListener('animationend', () => toast.remove());
+  // Hard fallback: if the exit animation never fires (missing CSS,
+  // prefers-reduced-motion, etc.) the toast must still go away.
+  setTimeout(() => toast.remove(), 500);
 }
 
 export function initToast() {

@@ -158,18 +158,40 @@
 .modal-stat-value { font-family: var(--font-mono); font-size: 0.95rem; color: var(--text); }
 
 /* ── Toast ── */
-.toast-container { position: fixed; top: 20px; right: 20px; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 8px; }
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .toast {
-  padding: 12px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 420px;
+  padding: 12px 14px 12px 18px;
   background: var(--panel-2);
   border: 1px solid var(--border-accent);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius);
   font-family: var(--font-mono);
   font-size: 0.74rem;
+  line-height: 1.55;
   color: var(--text);
   animation: slide-in 0.3s var(--ease);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+}
+.toast-error   { border-left-color: var(--red);    border-color: rgba(255, 77, 94, 0.3); }
+.toast-warning { border-left-color: var(--yellow); border-color: rgba(245, 166, 35, 0.3); }
+.toast-success { border-left-color: var(--green); }
+.toast-close {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  padding: 0 2px;
+  transition: color var(--speed-fast);
+}
+.toast-close:hover { color: var(--text); }
+/* dismissal — the JS waits for this animation's end before removing the node */
+.toast.toast-exit { animation: toast-out 0.25s var(--ease) forwards; }
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(24px); }
 }
 @keyframes slide-in {
   from { transform: translateX(100%); opacity: 0; }
