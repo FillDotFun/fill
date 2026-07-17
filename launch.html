@@ -94,6 +94,15 @@
           <p class="wizard-panel-desc">
             Where will your token live? Fill works with the top Robinhood Chain launchpads.
           </p>
+          <div class="guide-note">
+            <strong>Before you start:</strong> you'll need a wallet with a little ETH on
+            <strong>Robinhood Chain</strong> (0.0005 ETH launch fee + gas). No ETH there yet?
+            Bridge from Ethereum with the official
+            <a href="https://bridge.arbitrum.io" target="_blank" rel="noopener">Arbitrum bridge</a>
+            (pick Robinhood Chain as the destination, ~10 min) or faster routes like
+            <a href="https://across.to" target="_blank" rel="noopener">Across</a>.
+            Chain ID <strong>4663</strong> — beware of fake "bridge" sites.
+          </div>
           <div class="launchpad-grid" id="launchpad-grid"></div>
           <div class="wizard-nav">
             <div></div>
@@ -182,6 +191,19 @@
           <p class="wizard-panel-desc">
             Paste your token address. We verify the on-chain configuration.
           </p>
+          <figure class="guide-fig">
+            <div class="guide-fig-bar">
+              <span class="term-dots"><i></i><i></i><i></i></span>
+              <span class="guide-fig-title">where to find your token address</span>
+              <span class="guide-fig-zoom">click to enlarge ⤢</span>
+            </div>
+            <a href="/guide/pons-token-address.png" target="_blank" rel="noopener"><img src="/guide/pons-token-address.png" alt="A Pons token page — the Contract button copies the token address" loading="lazy" /></a>
+            <figcaption>
+              After launching, open your token's page — the <strong>Contract</strong> button copies the
+              address, and it's also right in the page URL (pons.family/launchpad/<em>0x…</em>).
+              Same idea on LaunchHood: launchhood.com/token/<em>0x…</em>.
+            </figcaption>
+          </figure>
           <div class="mint-input-group">
             <input type="text" id="mint-address-input" placeholder="Paste token address (0x…)" />
             <button class="btn btn-primary btn-sm" id="mint-verify-btn">VERIFY</button>

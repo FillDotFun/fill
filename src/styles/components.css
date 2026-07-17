@@ -615,6 +615,22 @@ section[id], #markets, #activity { scroll-margin-top: 72px; }
 .launchpad-tile-status { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); }
 .launchpad-tile.soon .launchpad-tile-status { color: var(--text-tertiary); }
 
+/* ── Inline guide note (wizard) ── */
+.guide-note {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(53, 201, 232, 0.25);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--radius);
+  background: rgba(53, 201, 232, 0.05);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.guide-note strong { color: var(--text); }
+.guide-note a { color: var(--cyan); text-decoration: underline; text-underline-offset: 2px; }
+.guide-note a:hover { color: var(--text); }
+
 /* ── Launchpad guide screenshots (wizard setup step) ── */
 .guide-fig {
   margin: 14px 0 6px;
