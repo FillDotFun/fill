@@ -50,9 +50,9 @@ export const POPULAR_TOKENS = STOCK_TOKENS;
 // Mirrors backend/services/strategies.js. maxLev bounds the leverage cap
 // a creator can pick; trade=false disables the trading controls entirely.
 export const STRATEGIES = [
-  { id: 'conservative', label: 'Conservative', desc: '3-10x · market hours only · tight stop',    trade: true,  maxLev: 10 },
-  { id: 'balanced',     label: 'Balanced',     desc: '5-25x · most sessions · standard stop',     trade: true,  maxLev: 25 },
-  { id: 'degen',        label: 'Degen',        desc: 'up to 50x · around the clock · signal-driven', trade: true, maxLev: 50 },
+  { id: 'conservative', label: 'Conservative', desc: '3-10x · regular market hours · tight stop',    trade: true,  maxLev: 10 },
+  { id: 'balanced',     label: 'Balanced',     desc: '5-25x · regular + extended sessions · standard stop',     trade: true,  maxLev: 25 },
+  { id: 'degen',        label: 'Degen',        desc: 'up to 50x · every market session · signal-driven', trade: true, maxLev: 50 },
   { id: 'off',          label: 'Off',          desc: 'no trading — fees go to buybacks only',     trade: false, maxLev: 0 },
 ];
 

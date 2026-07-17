@@ -16,6 +16,45 @@ export function initTradeHistory() {
     loadPositions(posGrid);
     setInterval(() => loadPositions(posGrid), 10_000);
   }
+
+  initMarketHoursBadge();
+}
+
+// Live US-market badge — the engine only opens stock positions while the
+// market is open, so say so instead of leaving an unexplained empty table.
+function initMarketHoursBadge() {
+  const badge = document.getElementById('market-hours-badge');
+  const dot = document.getElementById('market-hours-dot');
+  const text = document.getElementById('market-hours-text');
+  if (!badge || !dot || !text) return;
+
+  const refresh = async () => {
+    try {
+      const res = await fetch('/api/v1/status');
+      if (!res.ok) return;
+      const { stockMarket } = await res.json();
+      if (!stockMarket) return;
+      badge.hidden = false;
+      if (stockMarket.open) {
+        dot.style.background = 'var(--green)';
+        dot.style.boxShadow = '0 0 8px var(--green)';
+        badge.style.borderColor = 'rgba(0, 200, 5, 0.35)';
+        text.style.color = 'var(--green)';
+        text.textContent = 'US market open — engine trading enabled';
+      } else {
+        dot.style.background = 'var(--yellow)';
+        dot.style.boxShadow = '0 0 8px var(--yellow)';
+        badge.style.borderColor = 'rgba(245, 166, 35, 0.35)';
+        text.style.color = 'var(--yellow)';
+        text.textContent = 'US market closed — trades resume next session (' + (stockMarket.hours || 'Mon–Fri 9:30am–4:00pm ET') + ') · fees still collecting';
+      }
+    } catch {
+      // leave badge hidden — never guess market state
+    }
+  };
+
+  refresh();
+  setInterval(refresh, 60_000);
 }
 
 async function loadPositions(grid) {

@@ -477,6 +477,12 @@ export async function getSystemStatus(_req, res) {
         // true once PROTOCOL_PRIVATE_KEY is set — the engine can sign
         signerLoaded: !!config.protocolWallet,
       },
+      stockMarket: {
+        // live from Ostium's pair flags (handles weekends/holidays) —
+        // stock perp entries only happen while this is true
+        open: await ostium.isStockMarketOpen(),
+        hours: 'US sessions · Mon–Fri 9:30am–4:00pm ET',
+      },
       engine: {
         activeTokens: activeCount,
         totalTokens: tokens.length,

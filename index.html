@@ -447,6 +447,13 @@
         </details>
 
         <details class="faq-item">
+          <summary>When does the engine actually trade?</summary>
+          <div class="faq-a">
+            Stock perps can only be opened while the US market is open — Ostium halts equity entries outside trading sessions (Mon–Fri 9:30am–4:00pm ET, plus extended sessions depending on strategy). Creator fees collect around the clock regardless, and queue for the next session. Leverage is also automatically capped to each market's overnight limit so positions held past the close can't be force-liquidated.
+          </div>
+        </details>
+
+        <details class="faq-item">
           <summary>What happens if a position gets liquidated?</summary>
           <div class="faq-a">
             At high leverage (up to 50x), positions can be liquidated by small price moves — that collateral is lost. The engine limits each position's collateral, runs a hard stop-loss at -40%, and a fast profit-checker every 60-90 seconds. New fees keep flowing in regardless.

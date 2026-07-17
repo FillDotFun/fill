@@ -354,6 +354,24 @@ export function getMaxLeverage(_market) {
   return config.OSTIUM.MAX_LEVERAGE;
 }
 
+// Live US-stock-market open/closed state, read from Ostium's own pair flags
+// (authoritative — accounts for weekends, holidays, half-days). Cached 60s.
+let _marketOpenCache = { open: null, at: 0 };
+
+export async function isStockMarketOpen() {
+  if (_marketOpenCache.open !== null && Date.now() - _marketOpenCache.at < 60_000) {
+    return _marketOpenCache.open;
+  }
+  try {
+    const pair = await findPair('AAPL');
+    const open = pair?.isMarketOpen === true;
+    _marketOpenCache = { open, at: Date.now() };
+    return open;
+  } catch {
+    return _marketOpenCache.open ?? false;
+  }
+}
+
 /**
  * Live safe leverage cap for a market. Ostium equities have TWO caps:
  * an intraday max and a lower overnightMaxLeverage — positions above the

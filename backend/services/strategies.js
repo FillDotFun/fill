@@ -27,7 +27,7 @@ export const STRATEGY_MODES = {
   balanced: {
     id: 'balanced',
     label: 'Balanced',
-    description: 'Medium leverage (5-25x), trades most sessions, standard stop',
+    description: 'Medium leverage (5-25x), trades regular + extended US sessions, standard stop',
     trade: true,
     minLev: 5,
     maxLev: 25,
@@ -38,7 +38,7 @@ export const STRATEGY_MODES = {
   degen: {
     id: 'degen',
     label: 'Degen',
-    description: 'Signal-driven leverage up to 50x, trades around the clock',
+    description: 'Signal-driven leverage up to 50x, trades every US market session',
     trade: true,
     minLev: 10,
     maxLev: 50,
