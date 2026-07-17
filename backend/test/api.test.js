@@ -48,7 +48,7 @@ test('GET /launchpads lists the registry', async () => {
   const r = await fetch(`${BASE}/launchpads`);
   const d = await r.json();
   const ids = d.launchpads.map(l => l.id);
-  for (const id of ['pons', 'launchhood', 'robinlaunch', 'noxa']) {
+  for (const id of ['pons', 'launchhood', 'noxa']) {
     assert.ok(ids.includes(id), `${id} present`);
   }
   assert.match(d.protocolWallet, /^0x[0-9a-fA-F]{40}$/);

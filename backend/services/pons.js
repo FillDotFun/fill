@@ -9,8 +9,7 @@ import { getProvider, getSigner, getEthBalance, getTokenBalance, unwrapAllWeth }
 // Supports the top launchpads on the chain, each identified by the factory
 // contract that deploys its tokens (verified on-chain):
 //   pons        — factory + locker, "Creator wallet" field routes fees anywhere
-//   launchhood  — factory; fee rights follow the launching wallet
-//   robinlaunch — factory; fee rights follow the launching wallet
+//   launchhood  — factory; "Reward recipient" field routes fees anywhere
 //   noxa        — registered but not live yet
 //
 // A token's launchpad is detected from its on-chain deployer (Blockscout),

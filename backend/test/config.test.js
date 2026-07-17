@@ -5,7 +5,7 @@ import config from '../config.js';
 
 test('launchpad registry is well-formed', () => {
   const pads = Object.values(config.LAUNCHPADS);
-  assert.ok(pads.length >= 4, 'at least 4 launchpads registered');
+  assert.ok(pads.length >= 3, 'at least 3 launchpads registered');
 
   for (const lp of pads) {
     assert.ok(lp.id, `${lp.name} has an id`);

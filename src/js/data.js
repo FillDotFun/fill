@@ -11,15 +11,12 @@ export const ARBITRUM_EXPLORER_URL = 'https://arbiscan.io';
 
 // Supported Robinhood Chain launchpads (factories verified on-chain).
 // Pons ("Creator wallet") and LaunchHood ("Reward recipient") both have a
-// fee-routing field at launch — cleanest integration. On Robinlaunch,
-// creator fees follow the wallet that launched the token.
+// fee-routing field at launch — cleanest integration.
 export const LAUNCHPADS = [
   { id: 'pons',        name: 'Pons',        url: 'https://pons.family',    support: 'full',
     tagline: 'Creator wallet field routes fees straight to the engine' },
   { id: 'launchhood',  name: 'LaunchHood',  url: 'https://launchhood.com', support: 'full',
     tagline: 'Reward recipient field routes fees straight to the engine' },
-  { id: 'robinlaunch', name: 'Robinlaunch', url: 'https://robinlaunch.fun', support: 'partial',
-    tagline: 'Launch from the protocol wallet or transfer fee rights' },
   { id: 'noxa',        name: 'NOXA',        url: 'https://noxa.fun',       support: 'coming-soon',
     tagline: 'Support lands when their contracts go live' },
 ];

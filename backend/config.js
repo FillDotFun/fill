@@ -66,15 +66,6 @@ const LAUNCHPADS = {
     support: 'full',
     howTo: 'Set the Reward recipient field (Advanced) to the protocol wallet at launch.',
   },
-  robinlaunch: {
-    id: 'robinlaunch',
-    name: 'Robinlaunch',
-    url: 'https://robinlaunch.fun',
-    factory: getAddress(process.env.ROBINLAUNCH_FACTORY || '0x52afeBDb95Cda3C221eB415Abb9cEE051E3Ca082'),
-    locker: process.env.ROBINLAUNCH_LOCKER ? getAddress(process.env.ROBINLAUNCH_LOCKER) : '',
-    support: 'partial',
-    howTo: 'Launch the token from the protocol wallet, or transfer its fee rights to it.',
-  },
   noxa: {
     id: 'noxa',
     name: 'NOXA',

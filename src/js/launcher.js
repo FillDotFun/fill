@@ -138,12 +138,6 @@ function renderSetupInstructions() {
       `Hit <strong>Launch coin</strong>. From then on the creator share of trading fees flows to the engine automatically.`,
       `Copy your new <strong>token address</strong> (0x…) and paste it in the next step to verify &amp; register.`,
     ],
-    robinlaunch: [
-      `Robinlaunch has no fee-routing field — creator fees follow the wallet that <em>launches</em> the token. So the token must be launched <strong>from the protocol wallet</strong>:${walletRow}
-       ${fig('/guide/robinlaunch-home.png', 'robinlaunch.fun', 'Robinlaunch — token creation opens after connecting a wallet. The connected wallet becomes the fee recipient, so it must be the protocol wallet.')}`,
-      `If you already launched from your own wallet, transfer the token's fee rights to the protocol wallet instead (or relaunch).`,
-      `Copy the <strong>token address</strong> (0x…) of your newly created token and verify it in the next step.`,
-    ],
   };
 
   const steps = STEP_SETS[lp.id] || [

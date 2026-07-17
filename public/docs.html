@@ -372,7 +372,7 @@
       <h2 id="getting-started">Getting Started</h2>
       <p>Registering a token takes five steps on the <a href="/launch.html" style="color:var(--accent);">Launch page</a>:</p>
       <ol>
-        <li><strong>Pick a launchpad</strong> — Pons (full support), LaunchHood, or Robinlaunch.</li>
+        <li><strong>Pick a launchpad</strong> — Pons or LaunchHood — both route creator fees to the engine via a launch-form field.</li>
         <li><strong>Peg a stock</strong> — pick the Ostium market your token tracks, a direction, a max-leverage cap, and a bot strategy (Conservative / Balanced / Degen / Off).</li>
         <li><strong>Name your derivative token.</strong></li>
         <li><strong>Deploy on the launchpad</strong> — the wizard shows the exact settings for your chosen pad (on Pons: set the Creator wallet to the protocol wallet).</li>
@@ -425,7 +425,7 @@
       <p>Register a new token with the protocol.</p>
       <pre>{
   "address": "string — Robinhood Chain token address (0x…)",
-  "launchpad": "string — pons | launchhood | robinlaunch",
+  "launchpad": "string — pons | launchhood",
   "underlying": "string — Target stock symbol (e.g. AAPL, TSLA)",
   "side": "string — Position direction (long)",
   "strategy": "string — off | conservative | balanced | degen",
