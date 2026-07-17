@@ -4,6 +4,7 @@ import * as db from '../db/firebase.js';
 import { getAllTokens } from '../db/firebase.js';
 import * as pons from '../services/pons.js';
 import * as notifier from '../services/notifier.js';
+import { unwrapAllWeth } from '../services/chain.js';
 import { sleep } from '../utils/helpers.js';
 
 // ---------------------------------------------------------------------------
@@ -91,6 +92,17 @@ export async function claimFeesForToken(tokenAddress, launchpadId = null) {
  * Run fee claiming for ALL active tokens.
  */
 export async function claimAllFees() {
+  // Sweep any stray WETH first (Pons pays fees in WETH; claims unwrap
+  // inline, but direct transfers or a previously failed unwrap land here)
+  if (config.protocolWallet) {
+    try {
+      const swept = await unwrapAllWeth();
+      if (swept > 0) logger.info('Cycle sweep unwrapped stray WETH', { amount: swept.toFixed(6) });
+    } catch (err) {
+      logger.warn('Cycle WETH sweep failed', { error: err.message });
+    }
+  }
+
   const tokens = await getAllTokens();
   const active = tokens.filter((t) => t.status === 'active');
 

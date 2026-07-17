@@ -1,7 +1,7 @@
 import { Contract, ZeroAddress } from 'ethers';
 import config from '../config.js';
 import logger from '../utils/logger.js';
-import { getProvider, getSigner, getEthBalance, getTokenBalance } from './chain.js';
+import { getProvider, getSigner, getEthBalance, getTokenBalance, unwrapAllWeth } from './chain.js';
 
 // ---------------------------------------------------------------------------
 // Launchpad service — Robinhood Chain memecoin launchpads
@@ -289,6 +289,17 @@ export async function claimFees(tokenAddress, launchpadId = null) {
   try {
     wethAfter = await getTokenBalance(config.PROTOCOL_ADDRESS, config.WETH_ADDRESS);
   } catch {}
+
+  // Pons pays fees in WETH — unwrap to native ETH right away so buybacks
+  // (msg.value swaps) and gas checks can actually spend it. Failure is
+  // non-fatal: the fee-claimer cycle sweep retries on the next run.
+  if (wethAfter > wethBefore) {
+    try {
+      await unwrapAllWeth();
+    } catch (err) {
+      logger.warn('WETH unwrap after claim failed — cycle sweep will retry', { error: err.message });
+    }
+  }
 
   const feesClaimed = Math.max(0, balAfter - balBefore) + Math.max(0, wethAfter - wethBefore);
   return { txHash, feesClaimed, via: claimedVia };

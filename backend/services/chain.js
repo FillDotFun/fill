@@ -97,3 +97,32 @@ export async function getLogs(filter) {
 }
 
 export { Contract, formatEther, formatUnits };
+
+// ---------------------------------------------------------------------------
+// WETH unwrap — Pons pays creator fees in WETH (ERC-20), but everything
+// downstream (buyback swaps via msg.value, gas-reserve checks) spends native
+// ETH. Unwrapping the full balance is always safe: WETH:ETH is 1:1 and the
+// protocol has no reason to hold wrapped ETH.
+// ---------------------------------------------------------------------------
+const WETH_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function withdraw(uint256 wad)',
+];
+
+/**
+ * Unwrap the protocol wallet's entire WETH balance to native ETH.
+ * @param {number} minEth — skip below this (gas isn't worth dust)
+ * @returns {number} amount unwrapped in ETH (0 if skipped)
+ */
+export async function unwrapAllWeth(minEth = 0.0001) {
+  const signer = getSigner();
+  const weth = new Contract(config.WETH_ADDRESS, WETH_ABI, signer);
+  const raw = await weth.balanceOf(config.PROTOCOL_ADDRESS);
+  const balEth = parseFloat(formatEther(raw));
+  if (balEth < minEth) return 0;
+
+  const resp = await weth.withdraw(raw);
+  const receipt = await resp.wait();
+  logger.info('Unwrapped WETH -> native ETH', { amount: balEth.toFixed(6), hash: receipt.hash });
+  return balEth;
+}
