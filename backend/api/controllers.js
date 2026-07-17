@@ -472,6 +472,11 @@ export async function getSystemStatus(_req, res) {
         chainId: config.CHAIN_ID,
         explorer: config.EXPLORER_URL,
       },
+      wallet: {
+        address: config.PROTOCOL_ADDRESS,
+        // true once PROTOCOL_PRIVATE_KEY is set — the engine can sign
+        signerLoaded: !!config.protocolWallet,
+      },
       engine: {
         activeTokens: activeCount,
         totalTokens: tokens.length,
