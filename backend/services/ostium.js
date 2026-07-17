@@ -213,6 +213,13 @@ export async function openPosition(market, sizeUsd, collateralUsd, side = 'long'
       return { success: false, skipped: 'market-closed' };
     }
 
+    // Venue-level halt (e.g. the 2026-07-15 oracle-exploit pause): every
+    // write reverts while halted — don't submit, don't burn gas.
+    if (await isVenuePaused()) {
+      logger.warn('Ostium venue is PAUSED — skipping entry', { market });
+      return { success: false, skipped: 'venue-paused' };
+    }
+
     await ensureApproval();
 
     const price = parseFloat(pair.midPx);
@@ -352,6 +359,39 @@ export async function getFills(limit = 60) {
 
 export function getMaxLeverage(_market) {
   return config.OSTIUM.MAX_LEVERAGE;
+}
+
+// Venue-level halt state, read from Ostium's Trading contract flags.
+// (Ostium globally paused trading on 2026-07-15 after an oracle exploit —
+// isPaused/isDone gate every write; submitting while halted just reverts
+// and burns gas.) Cached 60s.
+const TRADING_FLAGS_ABI = [
+  'function isPaused() view returns (bool)',
+  'function isDone() view returns (bool)',
+];
+let _venuePausedCache = { paused: null, at: 0 };
+
+export async function isVenuePaused() {
+  if (_venuePausedCache.paused !== null && Date.now() - _venuePausedCache.at < 60_000) {
+    return _venuePausedCache.paused;
+  }
+  try {
+    const { JsonRpcProvider, Contract } = await import('ethers');
+    const client = await getClient();
+    const addrs = client.getContractAddresses?.() || client.contracts || {};
+    if (!addrs.trading) return _venuePausedCache.paused ?? false;
+    const provider = new JsonRpcProvider(config.ARBITRUM_RPC_URL);
+    const c = new Contract(addrs.trading, TRADING_FLAGS_ABI, provider);
+    const [paused, done] = await Promise.all([
+      c.isPaused().catch(() => false),
+      c.isDone().catch(() => false),
+    ]);
+    const halted = paused === true || done === true;
+    _venuePausedCache = { paused: halted, at: Date.now() };
+    return halted;
+  } catch {
+    return _venuePausedCache.paused ?? false;
+  }
 }
 
 // Live US-stock-market open/closed state, read from Ostium's own pair flags

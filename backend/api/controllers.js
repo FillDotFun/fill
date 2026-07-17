@@ -482,6 +482,10 @@ export async function getSystemStatus(_req, res) {
         // stock perp entries only happen while this is true
         open: await ostium.isStockMarketOpen(),
         hours: 'US sessions · Mon–Fri 9:30am–4:00pm ET',
+        // venue-level halt read from Ostium's Trading contract (isPaused/
+        // isDone). True since the 2026-07-15 oracle exploit — no trades
+        // can execute anywhere on Ostium until they resume.
+        venuePaused: await ostium.isVenuePaused(),
       },
       engine: {
         activeTokens: activeCount,

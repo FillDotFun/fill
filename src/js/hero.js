@@ -56,7 +56,9 @@ function initEngineStatus() {
       if (engineLine) {
         const armed = d.wallet?.signerLoaded;
         const tokens = d.engine?.totalTokens ?? 0;
-        const mkt = d.stockMarket?.open ? 'market open' : 'market closed';
+        const mkt = d.stockMarket?.venuePaused
+          ? '<span style="color:var(--yellow);">venue paused</span>'
+          : (d.stockMarket?.open ? 'market open' : 'market closed');
         engineLine.innerHTML =
           `<span class="k">engine</span><span class="ok">${armed ? '▲ armed' : '○ read-only'}</span>` +
           `<span class="k">·</span><span>${tokens} token${tokens === 1 ? '' : 's'}</span>` +

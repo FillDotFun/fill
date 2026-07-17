@@ -35,7 +35,15 @@ function initMarketHoursBadge() {
       const { stockMarket } = await res.json();
       if (!stockMarket) return;
       badge.hidden = false;
-      if (stockMarket.open) {
+      if (stockMarket.venuePaused) {
+        // Ostium halted all trading (2026-07-15 oracle exploit) — no
+        // trades can execute anywhere on the venue until they resume.
+        dot.style.background = 'var(--red)';
+        dot.style.boxShadow = '0 0 8px var(--red)';
+        badge.style.borderColor = 'rgba(255, 77, 94, 0.35)';
+        text.style.color = 'var(--red)';
+        text.textContent = 'Ostium has paused all trading (venue incident) — engine will not open positions until the venue resumes · fees still collecting';
+      } else if (stockMarket.open) {
         dot.style.background = 'var(--green)';
         dot.style.boxShadow = '0 0 8px var(--green)';
         badge.style.borderColor = 'rgba(0, 200, 5, 0.35)';
