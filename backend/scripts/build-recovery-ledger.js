@@ -111,9 +111,23 @@ await mapLimit(tradeTxs, 20, async ([hash, ts]) => {
     if (d > gMax) { gMax = d; gainer = w; }
     if (d < lMax) { lMax = d; loser = w; }
   }
-  // curve ETH legs from the tx's internal transactions
-  const itx = await fetchJson(`${API}/transactions/${hash}/internal-transactions`);
+  // The curve settles in WETH (routers wrap ETH first), so the value legs
+  // are WETH ERC-20 transfers to/from the curve inside the same tx —
+  // native internal-tx legs are counted too as belt-and-suspenders.
+  const WETH = '0x0bd7d308f8e1639fab988df18a8011f41eacad73';
   let ethIn = 0, ethOut = 0;
+  const tt = await fetchJson(`${API}/transactions/${hash}/token-transfers`);
+  for (const x of tt?.items || []) {
+    const tok = (x.token?.address_hash || x.token?.address || '').toLowerCase();
+    if (tok !== WETH) continue;
+    const from = (x.from?.hash || '').toLowerCase();
+    const to = (x.to?.hash || '').toLowerCase();
+    const v = parseFloat(x.total?.value || 0) / 1e18;
+    if (v <= 0) continue;
+    if (to === CURVE) ethIn += v;
+    if (from === CURVE) ethOut += v;
+  }
+  const itx = await fetchJson(`${API}/transactions/${hash}/internal-transactions`);
   for (const it of itx?.items || []) {
     const from = (it.from?.hash || '').toLowerCase();
     const to = (it.to?.hash || '').toLowerCase();
@@ -121,12 +135,6 @@ await mapLimit(tradeTxs, 20, async ([hash, ts]) => {
     if (v <= 0) continue;
     if (to === CURVE) ethIn += v;
     if (from === CURVE) ethOut += v;
-  }
-  // direct top-level ETH into the curve (rare, but free to include)
-  if (ethIn === 0) {
-    const tx = await fetchJson(`${API}/transactions/${hash}`);
-    const v = parseFloat(tx?.value || 0) / 1e18;
-    if (v > 0 && (tx?.to?.hash || '').toLowerCase() === CURVE) ethIn = v;
   }
   if (gainer && ethIn > 0) flow(gainer).in += ethIn;
   if (loser && ethOut > 0) flow(loser).out += ethOut;

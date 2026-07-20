@@ -2,6 +2,8 @@ import config from '../config.js';
 import logger from '../utils/logger.js';
 import { getProvider } from './chain.js';
 import { getLedger } from './recovery.js';
+import * as db from '../db/firebase.js';
+import { isAddress } from 'ethers';
 
 // ---------------------------------------------------------------------------
 // Capital bridge — moves idle fee ETH from Robinhood Chain to Arbitrum USDC
@@ -35,6 +37,24 @@ export function computeBridgeable(rhcEth, recoveryOutstandingEth, {
   const spendable = round6(rhcEth - reserves);
   if (spendable < min) return 0;
   return Math.min(spendable, max);
+}
+
+// Unspent buyback allocations (EVM-era only — legacy Solana docs excluded).
+// This ETH is owed to burns and must stay on Robinhood Chain until spent.
+async function getBuybackBacklogEth() {
+  try {
+    const [splits, buybacks] = await Promise.all([
+      db.queryDocs('splits', [], null, 1000),
+      db.queryDocs('buybacks', [], null, 1000),
+    ]);
+    const isEvm = (a) => typeof a === 'string' && a.startsWith('0x') && isAddress(a);
+    const alloc = splits.filter((x) => isEvm(x.tokenAddress)).reduce((s, x) => s + (x.buybackAmount || 0), 0);
+    const spent = buybacks.filter((x) => isEvm(x.tokenAddress)).reduce((s, x) => s + (x.amountEth || 0), 0);
+    return Math.max(0, alloc - spent);
+  } catch {
+    // If we can't compute the backlog, err on the side of not bridging
+    return Infinity;
+  }
 }
 
 async function relayQuote(amountEth) {
@@ -76,7 +96,12 @@ export async function bridgeIdleFees() {
       ? Math.max(0, (ledger.accruedEth || 0) - (ledger.paidEth || 0))
       : 0;
 
-    const amount = computeBridgeable(rhcEth, recoveryOutstanding);
+    // Burns come first: ETH owed to unspent buyback allocations never
+    // bridges away — the flat float only covers rounding/gas drift.
+    const buybackBacklog = await getBuybackBacklogEth();
+    const amount = computeBridgeable(rhcEth, recoveryOutstanding, {
+      buybackFloat: Math.min(buybackBacklog, 2) + 0.02,
+    });
     if (amount <= 0) return null;
 
     const quote = await relayQuote(amount);
