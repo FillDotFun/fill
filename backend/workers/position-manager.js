@@ -649,7 +649,7 @@ export async function managePositionForToken(tokenAddress) {
     const effectiveLeverage = Math.min(Math.max(signalLeverage, Math.min(mode.minLev || 1, maxLev)), maxLev);
     const sizeUsd = deployAmount * effectiveLeverage;
 
-    if (sizeUsd < 50) return null;
+    if (sizeUsd < config.RISK.minNotionalUsd) return null; // venue min order value
 
     logger.info('Opening position', {
       token: tokenAddress, market, direction, strategy: mode.id,
@@ -880,7 +880,7 @@ async function managePositionForMarket(tokenAddress, market, { manageOnly = fals
     const effectiveLeverage = Math.min(Math.max(signalLeverage, mode.minLev || 1), maxLev);
     const sizeUsd = deployAmount * effectiveLeverage;
 
-    if (sizeUsd < 50) return null;
+    if (sizeUsd < config.RISK.minNotionalUsd) return null; // venue min order value
 
     logger.info('Opening ' + market + ' position', {
       token: tokenAddress, market, direction, strategy: mode.id,

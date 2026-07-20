@@ -117,6 +117,9 @@ const RISK = {
   drawdownReducePct:    parseFloat(process.env.DRAWDOWN_REDUCE_PCT) || 0.25,
   // Minimum USDC to deploy into a single position (Ostium min notional applies too)
   minDeployUsd:         parseFloat(process.env.MIN_DEPLOY_USD) || 25,
+  // Minimum order VALUE (collateral × leverage). Hyperliquid rejects
+  // notional under $10; keep a small buffer above it by default.
+  minNotionalUsd:       parseFloat(process.env.MIN_NOTIONAL_USD) || 50,
   maxPositionUsd:       parseFloat(process.env.MAX_POSITION_USD) || 999999,
   liquidationWarningPct: parseFloat(process.env.LIQUIDATION_WARNING_PCT) || 0.05,
   // Minimum ETH to always keep in the Robinhood Chain wallet for gas fees
