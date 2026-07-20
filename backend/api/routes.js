@@ -35,6 +35,7 @@ router.get('/markets',            ctrl.listMarkets);
 
 // Perp venues — which one the engine is trading on + each one's state
 router.get('/venues',             ctrl.listVenues);
+router.get('/recovery',           ctrl.getRecovery);
 
 // Launchpads (supported Robinhood Chain launchpads)
 router.get('/launchpads',         ctrl.listLaunchpads);

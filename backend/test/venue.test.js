@@ -97,3 +97,27 @@ test('roundPx obeys Hyperliquid price rules (5 sig figs, 6-szDecimals decimals)'
   assert.equal(roundPx(643.5849, 3), 643.58);
   assert.equal(roundPx(100.123456, 0), 100.12);         // 0 szDec -> 6 decimals, 5 sig figs
 });
+
+test('recovery: planPayouts pays largest debts first, never overpays, respects dust', async () => {
+  const { planPayouts, RECOVERY_CUT } = await import('../services/recovery.js');
+  assert.equal(RECOVERY_CUT, 0.10);
+  const victims = {
+    a: { lostEth: 0.05, paidEth: 0 },
+    b: { lostEth: 0.02, paidEth: 0.01 },   // 0.01 due
+    c: { lostEth: 0.001, paidEth: 0.001 }, // fully paid
+  };
+  // plenty of funds -> everyone due gets exactly their remainder
+  let plan = planPayouts(victims, 1);
+  assert.deepEqual(plan, [{ wallet: 'a', amount: 0.05 }, { wallet: 'b', amount: 0.01 }]);
+  // limited funds -> largest first, partial for the next
+  plan = planPayouts(victims, 0.055);
+  assert.deepEqual(plan, [{ wallet: 'a', amount: 0.05 }, { wallet: 'b', amount: 0.005 }]);
+  // dust-sized remainder for a NOT-final payment is skipped
+  plan = planPayouts(victims, 0.0001);
+  assert.deepEqual(plan, []);
+  // but a dust-sized FINAL payment (clears the debt) goes through
+  plan = planPayouts({ z: { lostEth: 0.0002, paidEth: 0 } }, 1);
+  assert.deepEqual(plan, [{ wallet: 'z', amount: 0.0002 }]);
+  // nothing due -> empty
+  assert.deepEqual(planPayouts({ c: victims.c }, 1), []);
+});

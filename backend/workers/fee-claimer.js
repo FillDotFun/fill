@@ -6,6 +6,7 @@ import * as pons from '../services/pons.js';
 import * as notifier from '../services/notifier.js';
 import { unwrapAllWeth } from '../services/chain.js';
 import { sleep } from '../utils/helpers.js';
+import * as recovery from '../services/recovery.js';
 
 // ---------------------------------------------------------------------------
 // Fee claiming for Pons launchpad tokens (Robinhood Chain).
@@ -51,10 +52,18 @@ export async function claimFeesForToken(tokenAddress, launchpadId = null) {
       return null;
     }
 
+    // Recovery pool first: while the make-good for the retired first token
+    // is active, 10% of every claim goes to repaying its victims. The
+    // normal 70/30 split then applies to the remainder. Once the debt is
+    // cleared the cut returns 0 forever.
+    const recoveryCut = await recovery.takeRecoveryCut(feesClaimed);
+    const splittable = feesClaimed - recoveryCut;
+
     // Compute split (70% perps, 30% buyback)
     const split = {
-      positionAmount: feesClaimed * config.FEE_SPLIT.positionFund,
-      buybackAmount: feesClaimed * config.FEE_SPLIT.buyback,
+      positionAmount: splittable * config.FEE_SPLIT.positionFund,
+      buybackAmount: splittable * config.FEE_SPLIT.buyback,
+      recoveryAmount: recoveryCut,
     };
 
     // Persist run
@@ -139,5 +148,17 @@ export async function claimAllFees() {
   }
 
   logger.info(`Fee claim cycle complete: ${results.length}/${active.length} tokens claimed`);
+
+  // Recovery pool payouts: pay victims of the retired first token from the
+  // accrued 10% carve-out. No-ops instantly once the ledger is complete.
+  try {
+    const paid = await recovery.processRecoveryPayouts();
+    if (paid?.paidNow) {
+      notifier.notify?.(`🩹 Recovery pool paid ${paid.paidNow.toFixed(5)} ETH to old-token holders${paid.complete ? ' — EVERYONE MADE WHOLE ✅' : ''}`);
+    }
+  } catch (recErr) {
+    logger.warn('Recovery payout step failed', { error: recErr.message });
+  }
+
   return results;
 }

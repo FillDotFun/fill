@@ -571,6 +571,38 @@ export async function listMarkets(_req, res) {
 }
 
 // Which perp venue the engine trades on, and every venue's live state.
+// Recovery pool — the public make-good ledger for the retired first token.
+// Wallets are shortened for display; full amounts and tx hashes are real.
+export async function getRecovery(_req, res) {
+  try {
+    const ledger = await db.getConfig('recovery-ledger');
+    if (!ledger) return res.json({ active: false });
+    const victims = Object.entries(ledger.victims || {}).map(([wallet, v]) => ({
+      wallet: wallet.slice(0, 6) + '\u2026' + wallet.slice(-4),
+      lostEth: v.lostEth || 0,
+      paidEth: v.paidEth || 0,
+      madeWhole: (v.paidEth || 0) >= (v.lostEth || 0) - 1e-8,
+    })).sort((a, b) => b.lostEth - a.lostEth);
+    res.json({
+      active: !ledger.complete,
+      complete: !!ledger.complete,
+      liabilityEth: ledger.liabilityEth || 0,
+      accruedEth: ledger.accruedEth || 0,
+      paidEth: ledger.paidEth || 0,
+      victims,
+      payouts: (ledger.payouts || []).slice(-20).reverse().map(p => ({
+        to: p.to.slice(0, 6) + '\u2026' + p.to.slice(-4),
+        amountEth: p.amountEth, hash: p.hash, at: p.at,
+      })),
+      snapshotAt: ledger.snapshotAt || null,
+      completedAt: ledger.completedAt || null,
+    });
+  } catch (err) {
+    logger.error('getRecovery error', { error: err.message });
+    res.status(500).json({ error: 'Failed to fetch recovery state' });
+  }
+}
+
 export async function listVenues(_req, res) {
   try {
     res.json(await ostium.getVenueStatus());

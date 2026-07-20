@@ -12,6 +12,7 @@ import { initMarketCharts } from './js/charts.js';
 import { renderLaunchpadStrip } from './js/launcher.js';
 import { initHeroWatchlist } from './js/hero.js';
 import { initOnchainStocks } from './js/onchain.js';
+import { initRecovery } from './js/recovery.js';
 
 // Token deep links moved to the dashboard page — forward old links
 if (/^#token\/0x[0-9a-fA-F]{40}$/.test(location.hash)) {
@@ -28,5 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initToast();
   initMarketCharts();
   initOnchainStocks();
+  initRecovery();
   renderLaunchpadStrip();
 });

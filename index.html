@@ -424,6 +424,57 @@
   <!-- ═══════════════════════════════════════════════════════
        FAQ
        ═══════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════
+       RECOVERY POOL — make-good ledger for the retired first
+       token. Hidden until the backend reports a ledger.
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section" id="recovery" style="display:none;">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Recovery</span>
+        <h2 class="section-title">Making It Right</h2>
+        <p class="section-subtitle">
+          Our first token launch went out with a typo in its immutable on-chain name, so we retired it and relaunched.
+          Everyone who lost ETH on the retired contract gets repaid — <strong>10% of all protocol fees</strong> flow into
+          this pool and pay victims automatically, on-chain, until every wallet is made whole. Then it switches itself off.
+        </p>
+      </div>
+
+      <div class="glass-card reveal" style="padding:24px;max-width:860px;margin:0 auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+          <span id="rec-status" style="font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.14em;">LOADING…</span>
+          <span id="rec-pct" style="font-family:var(--font-mono);font-size:0.9rem;color:var(--accent);">—</span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:20px;">
+          <div id="rec-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.6s;"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;">
+          <div><div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.12em;">Total owed</div><div id="rec-liability" style="font-family:var(--font-mono);font-size:1.05rem;">—</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.12em;">Repaid</div><div id="rec-paid" style="font-family:var(--font-mono);font-size:1.05rem;color:var(--accent);">—</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.12em;">Pool accrued</div><div id="rec-accrued" style="font-family:var(--font-mono);font-size:1.05rem;">—</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.12em;">Wallets whole</div><div id="rec-wallets" style="font-family:var(--font-mono);font-size:1.05rem;">—</div></div>
+        </div>
+
+        <div style="overflow-x:auto;margin-bottom:20px;">
+          <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+            <thead>
+              <tr style="text-align:left;color:var(--text-tertiary);font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;">
+                <th style="padding:6px 8px;">Wallet</th><th style="padding:6px 8px;">Lost (ETH)</th><th style="padding:6px 8px;">Repaid (ETH)</th><th style="padding:6px 8px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="rec-victims"></tbody>
+          </table>
+        </div>
+
+        <div>
+          <div style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Payout history (on-chain)</div>
+          <div id="rec-payouts"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="faq">
     <div class="container">
       <div class="section-header reveal">
