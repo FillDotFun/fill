@@ -13,6 +13,17 @@ export function initRecovery() {
   const section = document.getElementById('recovery');
   if (!section) return;
 
+  // The section is hidden until the API confirms, which breaks the
+  // browser's native #recovery anchor jump on load — so we scroll
+  // ourselves once revealed, and on any later #recovery navigation.
+  let revealed = false;
+  const maybeScroll = () => {
+    if (location.hash === '#recovery') {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  window.addEventListener('hashchange', () => { if (revealed) maybeScroll(); });
+
   const refresh = async () => {
     try {
       const res = await fetch('/api/v1/recovery');
@@ -22,6 +33,7 @@ export function initRecovery() {
 
       section.style.display = '';
       render(d);
+      if (!revealed) { revealed = true; maybeScroll(); }
     } catch { /* stay hidden */ }
   };
 
