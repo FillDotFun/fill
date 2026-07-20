@@ -615,6 +615,31 @@ section[id], #markets, #activity { scroll-margin-top: 72px; }
 .launchpad-tile-status { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); }
 .launchpad-tile.soon .launchpad-tile-status { color: var(--text-tertiary); }
 
+/* ── Perp venue banner ── */
+.venue-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 1000px;
+  margin: 0 auto 18px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+}
+.venue-banner strong { color: var(--text); }
+.venue-banner .vb-dim { color: var(--text-tertiary); }
+.venue-banner .vb-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
 /* ── Inline guide note (wizard) ── */
 .guide-note {
   margin: 0 0 18px;

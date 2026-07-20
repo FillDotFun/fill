@@ -53,6 +53,18 @@ function initEngineStatus() {
       const d = await res.json();
 
       if (live) live.innerHTML = '<span class="pulse-dot"></span> LIVE';
+
+      // perp venue line — the active venue + a note if a venue is paused
+      const venueLine = document.getElementById('hero-venue-line');
+      if (venueLine && d.venue) {
+        const act = (d.venue.venues || []).find(v => v.active);
+        const paused = (d.venue.venues || []).find(v => v.paused);
+        const note = paused ? `<span class="k">·</span><span style="color:var(--yellow);">${paused.name} paused</span>` : '';
+        venueLine.innerHTML =
+          `<span class="k">perp&nbsp;venue</span><span class="cy">${act ? act.name.toLowerCase() : '—'}</span>` +
+          `<span class="k">·</span><span>up&nbsp;to&nbsp;50x</span>${note}`;
+      }
+
       if (engineLine) {
         const armed = d.wallet?.signerLoaded;
         const tokens = d.engine?.totalTokens ?? 0;

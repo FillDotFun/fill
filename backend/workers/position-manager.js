@@ -1,7 +1,7 @@
 import logger from '../utils/logger.js';
 import config from '../config.js';
 import * as db from '../db/firebase.js';
-import * as perps from '../services/ostium.js';
+import * as perps from '../services/venue.js';
 import { getAllTokens } from '../db/firebase.js';
 import { retry, sleep } from '../utils/helpers.js';
 import { shouldEnterNow, shouldExitNow, getSession } from '../services/market-signal.js';

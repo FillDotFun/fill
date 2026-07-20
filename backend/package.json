@@ -1,7 +1,7 @@
 {
   "name": "fill-backend",
   "version": "2.0.0",
-  "description": "Fill Protocol backend worker service \u2014 Pons fee claiming, Arcus stock perp management, buyback/burn on Robinhood Chain",
+  "description": "Fill Protocol backend worker service — Pons fee claiming, Arcus stock perp management, buyback/burn on Robinhood Chain",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -18,6 +18,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.5.2",
     "firebase-admin": "^13.0.3",
+    "hyperliquid": "^1.7.7",
     "node-cron": "^3.0.3",
     "viem": "^2.55.2",
     "winston": "^3.17.0"

@@ -2,7 +2,7 @@ import { isAddress, getAddress } from 'ethers';
 import * as db from '../db/firebase.js';
 import { verifyCreatorConfig, getTokenMetadata } from '../services/pons.js';
 import { STRATEGY_MODES, DEFAULT_STRATEGY, isValidStrategy } from '../services/strategies.js';
-import * as ostium from '../services/ostium.js';
+import * as ostium from '../services/venue.js';
 import * as gecko from '../services/geckoterminal.js';
 import * as birdeye from '../services/birdeye.js';
 import { getWorkerHealth } from '../workers/scheduler.js';
@@ -478,15 +478,14 @@ export async function getSystemStatus(_req, res) {
         signerLoaded: !!config.protocolWallet,
       },
       stockMarket: {
-        // live from Ostium's pair flags (handles weekends/holidays) —
-        // stock perp entries only happen while this is true
+        // live from the ACTIVE venue — stock perp entries only happen while true
         open: await ostium.isStockMarketOpen(),
         hours: 'US sessions · Mon–Fri 9:30am–4:00pm ET',
-        // venue-level halt read from Ostium's Trading contract (isPaused/
-        // isDone). True since the 2026-07-15 oracle exploit — no trades
-        // can execute anywhere on Ostium until they resume.
+        // true when the active venue itself is halted
         venuePaused: await ostium.isVenuePaused(),
       },
+      // Which perp venue the engine is trading on + each venue's state
+      venue: await ostium.getVenueStatus(),
       engine: {
         activeTokens: activeCount,
         totalTokens: tokens.length,
@@ -533,12 +532,23 @@ export async function listLaunchpads(_req, res) {
 // Markets — list all available Ostium stock perp markets
 // ---------------------------------------------------------------------------
 export async function listMarkets(_req, res) {
+  const activeId = await ostium.activeVenueId().catch(() => config.TRADING_VENUE);
   const markets = config.STOCK_MARKETS.map((symbol) => ({
     symbol,
-    provider: 'ostium',
+    provider: activeId,
     maxLeverage: config.OSTIUM.MAX_LEVERAGE,
   }));
-  res.json({ markets });
+  res.json({ markets, venue: activeId });
+}
+
+// Which perp venue the engine trades on, and every venue's live state.
+export async function listVenues(_req, res) {
+  try {
+    res.json(await ostium.getVenueStatus());
+  } catch (err) {
+    logger.error('listVenues error', { error: err.message });
+    res.status(500).json({ error: 'Failed to fetch venues' });
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -37,11 +37,20 @@ test('GET /health', async () => {
   assert.equal(d.dbMode, 'mock');
 });
 
-test('GET /markets lists ostium stock perps', async () => {
+test('GET /markets lists stock perps on the active venue', async () => {
   const r = await fetch(`${BASE}/markets`);
   const d = await r.json();
   assert.ok(d.markets.length >= 10);
-  assert.ok(d.markets.every(m => m.provider === 'ostium' && m.maxLeverage === 50));
+  assert.ok(['hyperliquid', 'ostium'].includes(d.venue), 'names the active venue');
+  assert.ok(d.markets.every(m => m.provider === d.venue && m.maxLeverage === 50));
+});
+
+test('GET /venues reports active venue + per-venue state', async () => {
+  const r = await fetch(`${BASE}/venues`);
+  const d = await r.json();
+  assert.ok(['hyperliquid', 'ostium'].includes(d.active));
+  assert.ok(Array.isArray(d.venues) && d.venues.length >= 2);
+  assert.ok(d.venues.some(v => v.active), 'one venue is marked active');
 });
 
 test('GET /launchpads lists the registry', async () => {

@@ -147,6 +147,34 @@ const OSTIUM = {
 };
 
 // ---------------------------------------------------------------------------
+// Perp venue selection. Ostium halted after the 2026-07-15 oracle exploit,
+// so the engine trades on Hyperliquid's trade[XYZ] equity dex for now and
+// switches back to Ostium once it safely resumes. Each venue self-reports a
+// paused state; the router (services/venue.js) picks the primary, and if it's
+// paused, fails over to any other live venue.
+// ---------------------------------------------------------------------------
+const TRADING_VENUE = process.env.TRADING_VENUE || 'hyperliquid';
+const VENUES = {
+  hyperliquid: {
+    id: 'hyperliquid',
+    name: 'Hyperliquid',
+    dex: 'trade[XYZ] equity perps',
+    chain: 'Hyperliquid L1',
+    collateral: 'USDC (on Hyperliquid)',
+    url: 'https://app.hyperliquid.xyz',
+  },
+  ostium: {
+    id: 'ostium',
+    name: 'Ostium',
+    dex: 'RWA perps',
+    chain: 'Arbitrum One',
+    collateral: 'USDC (on Arbitrum)',
+    url: 'https://ostium.com',
+    note: 'Trading globally paused since 2026-07-15 (oracle exploit). Re-enabled automatically when the venue resumes.',
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Uniswap on Robinhood Chain — Pons tokens graduate to locked Uniswap pools,
 // so buybacks route through the Uniswap V3 SwapRouter02.
 // Default is the official deployment from Uniswap's sdk-core, verified
@@ -209,6 +237,8 @@ const config = {
   RISK,
   INTERVALS,
   OSTIUM,
+  TRADING_VENUE,
+  VENUES,
   UNISWAP_ROUTER,
   STOCK_MARKETS,
   EXTRA_MARKETS,

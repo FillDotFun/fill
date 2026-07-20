@@ -160,10 +160,10 @@ function renderPopularTokens() {
   if (!grid) return;
 
   grid.innerHTML = `
-    <div class="token-section-label" style="grid-column:1/-1;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">OSTIUM STOCK PERPS — UP TO 50X</div>
+    <div class="token-section-label" style="grid-column:1/-1;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">STOCK PERPS · UP TO 50X</div>
     ${POPULAR_TOKENS.map(t => `
       <div class="popular-token-card glass-card perps-available" data-symbol="${t.symbol}" data-provider="${t.provider}" data-maxlev="${t.maxLev}">
-        <div class="token-perps-badge">OSTIUM</div>
+        <div class="token-perps-badge">PERP</div>
         <div class="token-symbol">${t.symbol}</div>
         <div class="token-label">${t.name}</div>
       </div>
@@ -415,7 +415,7 @@ async function handleVerifyAndRegister() {
       terminalAppend(terminal, `  creator wallet: ${token.creatorWallet.slice(0, 10)}...`, 'var(--green)');
     }
     terminalAppend(terminal, '  creator fees route to protocol', 'var(--green)');
-    terminalAppend(terminal, `  pegged to ${token.underlying || 'AAPL'} perps on Ostium`, 'var(--green)');
+    terminalAppend(terminal, `  pegged to ${token.underlying || 'AAPL'} stock perps`, 'var(--green)');
     terminalAppend(terminal, '', '');
     terminalAppend(terminal, '  registered — fee claiming will begin automatically', 'var(--accent)');
 

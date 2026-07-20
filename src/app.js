@@ -8,6 +8,7 @@ import { initTicker } from './js/ticker.js';
 import { initStats } from './js/stats.js';
 import { initDashboard, initModal, initActivityFeed } from './js/dashboard.js';
 import { initTradeHistory } from './js/trades.js';
+import { initVenueBanner } from './js/venuebadge.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initTicker();
@@ -18,4 +19,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initModal();
   initActivityFeed();
   initTradeHistory();
+  initVenueBanner();
 });
