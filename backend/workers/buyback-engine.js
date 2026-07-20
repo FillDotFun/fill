@@ -222,6 +222,45 @@ export async function buybackSourceToken(tokenAddress) {
  *   1. Source token buyback (70% of profits → buy the derivative token)
  *   2. FILL buyback (30% of fees + 30% of profits → buy FILL)
  */
+
+/**
+ * Burn sweeper — self-healing for "bought but not burned". A buyback's
+ * burn tx can fail after its swap succeeded (nonce races between workers
+ * signing from the same wallet), stranding tokens in the protocol wallet.
+ * Every cycle, any balance of the official FILL token or an active
+ * registry token gets burned and recorded. Retired tokens are left alone.
+ */
+async function sweepUnburnedTokens() {
+  const targets = new Set();
+  if (config.FILL_TOKEN_ADDRESS) targets.add(config.FILL_TOKEN_ADDRESS);
+  const tokens = await getAllTokens();
+  for (const t of tokens) {
+    if (t.status === 'active') targets.add(t.address || t.id);
+  }
+  let swept = 0;
+  for (const token of targets) {
+    try {
+      const balance = await getTokenBalance(config.PROTOCOL_ADDRESS, token);
+      if (!(balance > 1e-6)) continue;
+      const burnHash = await burnTokens(token, balance);
+      await db.addBuyback({
+        tokenAddress: token,
+        targetToken: token,
+        amountEth: 0,               // the buy was already recorded — this is the burn
+        tokensBurned: balance,
+        burnTxHash: burnHash,
+        type: 'burn-sweep',
+      });
+      swept++;
+      logger.info('Burn sweep: stranded tokens burned', { token: token.slice(0, 12), tokensBurned: balance, burnHash });
+      await sleep(1500);
+    } catch (err) {
+      logger.warn('Burn sweep failed for token — retried next cycle', { token: token.slice(0, 12), error: err.message });
+    }
+  }
+  return swept;
+}
+
 export async function buybackAllTokens() {
   // Pons pools live on a Uniswap V3 fork whose router isn't published yet.
   // Until UNISWAP_ROUTER is set, buyback allocations accrue safely in ETH.
@@ -272,6 +311,14 @@ export async function buybackAllTokens() {
     if (i < active.length - 1) {
       await sleep(2000);
     }
+  }
+
+  // Self-heal any strandings from this or previous cycles
+  try {
+    const swept = await sweepUnburnedTokens();
+    if (swept > 0) logger.info('Burn sweep complete', { tokensSwept: swept });
+  } catch (sweepErr) {
+    logger.warn('Burn sweep errored', { error: sweepErr.message });
   }
 
   logger.info(`Buyback cycle complete: ${results.length} buybacks executed`);
