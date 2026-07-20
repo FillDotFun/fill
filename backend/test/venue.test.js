@@ -61,3 +61,30 @@ test('computeAutoDeposit: bridge-minimum and reserve rules', async () => {
   assert.equal(computeAutoDeposit(45, 0, 10, 41), 0);   // leftover 4 < bridge min
   assert.equal(computeAutoDeposit(45, 0, 10, 20), 25);
 });
+
+test('discovery: extractCandidates harvests emitter + address topics, never the wallet', async () => {
+  const { extractCandidates, walletTopicFor } = await import('../workers/token-discovery.js');
+  const wallet = '0x2cdE129778a416279d9f6F1E9B5c3abb302D1CD7';
+  const wt = walletTopicFor(wallet);
+  assert.equal(wt, '0x0000000000000000000000002cde129778a416279d9f6f1e9b5c3abb302d1cd7');
+  // Pons manager launch event: (token, creatorWallet) both indexed
+  const log = {
+    address: '0x736D76699C26D0d966744cAe304C000d471f7F35',
+    topics: [
+      '0x193b011c00000000000000000000000000000000000000000000000000000000',
+      '0x000000000000000000000000fedf348a2128122a82bcdd7b8004a95c49cd43f5',
+      wt,
+    ],
+  };
+  const got = extractCandidates(log, wt);
+  assert.ok(got.includes('0x736d76699c26d0d966744cae304c000d471f7f35'), 'emitter harvested');
+  assert.ok(got.includes('0xfedf348a2128122a82bcdd7b8004a95c49cd43f5'), 'token topic harvested');
+  assert.ok(!got.some(a => a === wallet.toLowerCase()), 'wallet itself never a candidate');
+  // zero-address and non-address topics are ignored
+  const junk = extractCandidates({ address: null, topics: [
+    '0xddf252ad00000000000000000000000000000000000000000000000000000000',
+    '0x0000000000000000000000000000000000000000000000000000000000000000',
+    '0xffffffff000000000000000000000000fedf348a2128122a82bcdd7b8004a95c',
+  ] }, wt);
+  assert.deepEqual(junk, []);
+});

@@ -2,20 +2,60 @@ import logger from '../utils/logger.js';
 import config from '../config.js';
 import * as db from '../db/firebase.js';
 import { getProvider } from '../services/chain.js';
-import { getTokenMetadata, detectLaunchpad } from '../services/pons.js';
+import { getTokenMetadata, detectLaunchpad, verifyCreatorConfig } from '../services/pons.js';
+import { DEFAULT_STRATEGY } from '../services/strategies.js';
 
 /**
- * Scans recent Pons factory launch events for tokens whose creator wallet is
- * the protocol wallet but that aren't registered in the DB yet.
- * Auto-registers any new ones found.
+ * Auto-discovery: registers tokens that route fees to the protocol wallet
+ * WITHOUT the site's register step (which also still works).
  *
- * The factory emits a launch event per token; we don't rely on the exact
- * event signature — instead we scan factory logs for entries that reference
- * the protocol wallet and pull the token address out of the indexed topics.
+ * How: launchpads emit events referencing the creator wallet — Pons's
+ * manager contract emits (token, creatorWallet) both indexed at launch, and
+ * fee claims/transfers reference the wallet too. We scan chain-wide for ANY
+ * event with the protocol wallet as an indexed topic, harvest every
+ * address-shaped value around it as a candidate, and then let
+ * verifyCreatorConfig() — the same authoritative on-chain check the
+ * register endpoint uses — decide. Only tokens that provably route fees to
+ * the protocol wallet get registered; WETH, routers, and random mentions
+ * fail verification and are dropped.
+ *
+ * A persistent block cursor (Firestore config) means downtime never loses a
+ * launch: each cycle resumes exactly where the last one stopped.
  */
 
-// How far back to scan each cycle (~30 min of Robinhood Chain blocks)
-const SCAN_BLOCKS = 7200;
+const CHUNK_BLOCKS = 200_000;
+// First-ever run looks this far back (~1 week; the wallet is younger)
+const BACKFILL_BLOCKS = parseInt(process.env.DISCOVERY_BACKFILL_BLOCKS, 10) || 3_000_000;
+const CURSOR_KEY = 'discovery-cursor';
+
+export function walletTopicFor(address) {
+  return '0x' + address.slice(2).toLowerCase().padStart(64, '0');
+}
+
+/**
+ * Pure: pull candidate token addresses out of one log that references the
+ * protocol wallet — the emitter itself plus every other address-shaped
+ * indexed topic. (Unit-tested.)
+ */
+export function extractCandidates(log, walletTopic) {
+  const out = new Set();
+  if (log.address) out.add(log.address.toLowerCase());
+  for (const topic of (log.topics || []).slice(1)) {
+    const t = topic.toLowerCase();
+    if (t === walletTopic) continue;
+    if (!t.startsWith('0x000000000000000000000000')) continue; // address-shaped only
+    const addr = '0x' + t.slice(26);
+    if (/^0x0{40}$/.test(addr)) continue;
+    out.add(addr);
+  }
+  return [...out];
+}
+
+// Symbol straight onto a listed stock market (e.g. COIN) — else the default.
+function inferUnderlying(symbol) {
+  const s = (symbol || '').toUpperCase();
+  return config.STOCK_MARKETS.includes(s) ? s : config.DEFAULT_MARKET;
+}
 
 export async function discoverNewTokens() {
   logger.info('Running token auto-discovery');
@@ -26,109 +66,103 @@ export async function discoverNewTokens() {
     return { discovered: 0 };
   }
 
-  try {
-    const provider = getProvider();
-    const walletTopic = '0x' + config.PROTOCOL_ADDRESS.slice(2).toLowerCase().padStart(64, '0');
+  const provider = getProvider();
+  const walletTopic = walletTopicFor(config.PROTOCOL_ADDRESS);
 
-    // Get existing tokens
-    const existingTokens = await db.getAllTokens();
-    const existingAddresses = new Set(
-      existingTokens.map(t => (t.id || t.address || '').toLowerCase()),
-    );
+  const latest = await provider.getBlockNumber();
+  const cursor = await db.getConfig(CURSOR_KEY).catch(() => null);
+  const fromBlock = cursor?.lastBlock
+    ? Math.min(cursor.lastBlock + 1, latest)
+    : Math.max(0, latest - BACKFILL_BLOCKS);
 
-    const latest = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, latest - SCAN_BLOCKS);
+  const existingTokens = await db.getAllTokens();
+  const existingAddresses = new Set(
+    existingTokens.map(t => (t.id || t.address || '').toLowerCase()),
+  );
+  const skip = new Set([
+    config.WETH_ADDRESS.toLowerCase(),
+    (config.FILL_TOKEN_ADDRESS || '').toLowerCase(),
+  ]);
 
-    // Factory logs from every supported launchpad in the window
-    const factories = Object.values(config.LAUNCHPADS)
-      .map(lp => lp.factory)
-      .filter(Boolean);
-    const logs = [];
-    for (const factory of factories) {
+  // Chain-wide scan: wallet as indexed topic in any of the 3 positions
+  const candidates = new Set();
+  let scanErrors = 0;
+  for (let pos = 1; pos <= 3; pos++) {
+    const topics = [null];
+    for (let i = 0; i < pos; i++) topics.push(i === pos - 1 ? walletTopic : null);
+    for (let from = fromBlock; from <= latest; from += CHUNK_BLOCKS) {
+      const to = Math.min(from + CHUNK_BLOCKS - 1, latest);
       try {
-        const batch = await provider.getLogs({ address: factory, fromBlock, toBlock: latest });
-        logs.push(...batch);
-      } catch (logErr) {
-        logger.debug('Factory log scan failed', { factory, error: logErr.message });
-      }
-    }
-
-    const newAddresses = new Set();
-
-    for (const log of logs) {
-      // Only logs that reference the protocol wallet (creator / recipient)
-      const mentionsWallet =
-        log.topics.some(t => t.toLowerCase() === walletTopic) ||
-        log.data.toLowerCase().includes(config.PROTOCOL_ADDRESS.slice(2).toLowerCase());
-      if (!mentionsWallet) continue;
-
-      // Pull candidate token addresses out of the indexed topics
-      for (const topic of log.topics.slice(1)) {
-        if (topic.toLowerCase() === walletTopic) continue;
-        // Address-shaped topic: 12 zero bytes then 20 bytes of address
-        if (!topic.startsWith('0x000000000000000000000000')) continue;
-        const candidate = ('0x' + topic.slice(26)).toLowerCase();
-        if (candidate === config.WETH_ADDRESS.toLowerCase()) continue;
-        if (candidate === config.FILL_TOKEN_ADDRESS.toLowerCase()) continue;
-        if (existingAddresses.has(candidate) || newAddresses.has(candidate)) continue;
-
-        // Confirm it's an ERC-20 contract before registering
-        try {
-          const code = await provider.getCode(candidate);
-          if (code && code !== '0x') newAddresses.add(candidate);
-        } catch {}
-      }
-    }
-
-    if (newAddresses.size === 0) {
-      logger.info('No new tokens discovered');
-      return { discovered: 0 };
-    }
-
-    logger.info('Found new tokens to register', { count: newAddresses.size });
-
-    let registered = 0;
-    for (const address of newAddresses) {
-      try {
-        const meta = await getTokenMetadata(address);
-        if (!meta?.symbol) {
-          logger.warn('No metadata for discovered token, skipping', { token: address.slice(0, 16) });
-          continue;
+        const logs = await provider.getLogs({ fromBlock: from, toBlock: to, topics });
+        for (const log of logs) {
+          for (const addr of extractCandidates(log, walletTopic)) {
+            if (skip.has(addr) || existingAddresses.has(addr)) continue;
+            candidates.add(addr);
+          }
         }
-
-        const lp = await detectLaunchpad(address);
-        const tokenData = {
-          address,
-          name: meta.name || 'Unknown',
-          symbol: meta.symbol || 'UNK',
-          image: meta.image || '',
-          launchpad: lp?.id || 'pons',
-          underlying: config.DEFAULT_MARKET,
-          perpsMarket: config.DEFAULT_MARKET,
-          provider: 'ostium',
-          side: 'long',
-          leverage: config.RISK.leverage,
-          createdAt: Date.now(),
-          status: 'active',
-          autoDiscovered: true,
-        };
-
-        await db.setToken(address, tokenData);
-        registered++;
-        logger.info('Auto-registered new token', {
-          token: address.slice(0, 16),
-          symbol: meta.symbol,
-          name: meta.name,
-        });
-      } catch (e) {
-        logger.warn('Failed to auto-register token', { token: address.slice(0, 16), error: e.message });
+      } catch (err) {
+        scanErrors++;
+        logger.debug('Discovery log chunk failed', { from, to, error: err.message });
       }
     }
-
-    logger.info('Token discovery complete', { discovered: newAddresses.size, registered });
-    return { discovered: newAddresses.size, registered };
-  } catch (err) {
-    logger.error('Token discovery failed', { error: err.message });
-    throw err;
   }
+
+  let registered = 0;
+  for (const address of candidates) {
+    try {
+      // Must be a contract
+      const code = await provider.getCode(address);
+      if (!code || code === '0x') continue;
+
+      // Authoritative gate: the SAME on-chain fee-routing verification the
+      // register endpoint runs. Non-launchpad contracts and tokens whose
+      // creator isn't the protocol wallet are rejected here.
+      const check = await verifyCreatorConfig(address);
+      if (!check?.valid) continue;
+
+      const meta = await getTokenMetadata(address);
+      if (!meta?.symbol) {
+        logger.warn('No metadata for discovered token, skipping', { token: address.slice(0, 16) });
+        continue;
+      }
+
+      const lp = await detectLaunchpad(address);
+      const underlying = inferUnderlying(meta.symbol);
+      await db.setToken(address, {
+        address,
+        name: meta.name || 'Unknown',
+        symbol: meta.symbol || 'UNK',
+        image: meta.image || '',
+        launchpad: lp?.id || check.launchpad || 'pons',
+        underlying,
+        perpsMarket: underlying,
+        provider: 'ostium',
+        side: 'long',
+        strategy: DEFAULT_STRATEGY,
+        leverage: config.RISK.leverage,
+        createdAt: Date.now(),
+        status: 'active',
+        autoDiscovered: true,
+      });
+      registered++;
+      logger.info('Auto-registered new token', {
+        token: address.slice(0, 16), symbol: meta.symbol, name: meta.name, underlying,
+      });
+    } catch (e) {
+      logger.warn('Failed to auto-register token', { token: address.slice(0, 16), error: e.message });
+    }
+  }
+
+  // Advance the cursor only when the scan itself succeeded — a failed chunk
+  // stays unscanned and is retried next cycle.
+  if (scanErrors === 0) {
+    await db.setConfig(CURSOR_KEY, { lastBlock: latest, updatedAt: Date.now() }).catch(() => {});
+  }
+
+  if (registered === 0) {
+    logger.info('No new tokens discovered', { candidates: candidates.size, scannedFrom: fromBlock });
+  } else {
+    logger.info('Token discovery complete', { candidates: candidates.size, registered });
+  }
+  return { discovered: candidates.size, registered };
 }
