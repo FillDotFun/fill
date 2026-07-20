@@ -8,6 +8,7 @@ import { shouldEnterNow, shouldExitNow, getSession } from '../services/market-si
 import { resolveStrategy, favorableExtreme, pullbackFrom } from '../services/strategies.js';
 import { getEthPrice } from '../services/uniswap.js';
 import * as notifier from '../services/notifier.js';
+import { bridgeIdleFees } from '../services/capital-bridge.js';
 
 const RTH_SESSIONS = ['market-open', 'power-hour', 'regular-hours'];
 
@@ -732,9 +733,18 @@ export async function manageAllPositions() {
   const active = tokens.filter((t) => t.status === 'active');
   if (active.length === 0) return [];
 
-  // Capital routing first: if the active venue can auto-fund itself from
-  // idle collateral (Hyperliquid pulls Arbitrum USDC through its bridge),
-  // do that before evaluating entries so sizing sees the real balance.
+  // Capital routing first — full pipeline each cycle:
+  //   idle RHC fee ETH -> Arbitrum USDC (Relay)  [hop 0]
+  //   Arbitrum USDC -> HL main -> xyz margin      [hops 1-2]
+  // so sizing sees the real, topped-up balance.
+  try {
+    const bridged = await bridgeIdleFees();
+    if (bridged?.amountEth) {
+      notifier.notify?.(`🌉 Bridged ${bridged.amountEth.toFixed(3)} ETH of fees to trading collateral (~$${bridged.expectUsdc.toFixed(0)} USDC)`);
+    }
+  } catch (bridgeErr) {
+    logger.warn('bridgeIdleFees failed — continuing', { error: bridgeErr.message });
+  }
   try {
     const deposited = await perps.ensureCollateral?.();
     if (deposited?.amount) {

@@ -177,3 +177,17 @@ test('brand guard: FILL copycats refused, official token exempt', async () => {
   assert.equal(isBrandImpersonation('FILLER', 'Filler Token', '0x' + 'd4'.repeat(20)), false);
   assert.equal(isBrandImpersonation('SPOTIFY', 'Spotify Wrapped', '0x' + 'd4'.repeat(20)), false);
 });
+
+test('capital bridge: computeBridgeable respects reserves and clamps', async () => {
+  const { computeBridgeable } = await import('../services/capital-bridge.js');
+  const opts = { gasReserve: 0.02, buybackFloat: 0.10, min: 0.1, max: 0.5 };
+  // 0.479 on RHC, 0.046 owed to recovery -> reserves 0.166 -> bridge ~0.313
+  assert.equal(computeBridgeable(0.479, 0.046, opts), 0.313);
+  // below min -> nothing
+  assert.equal(computeBridgeable(0.25, 0.046, opts), 0);
+  assert.equal(computeBridgeable(0.1, 0, opts), 0);
+  // large balance clamps to max per cycle
+  assert.equal(computeBridgeable(5, 0, opts), 0.5);
+  // recovery obligations always stay behind
+  assert.equal(computeBridgeable(0.479, 0.479, opts), 0);
+});

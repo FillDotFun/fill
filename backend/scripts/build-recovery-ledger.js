@@ -60,22 +60,28 @@ const flow = (w) => {
   return flows.get(k);
 };
 
-// Trades route through a router, so ETH flows are only visible per-trade:
-// walk the token's transfers (curve->wallet = buy, wallet->curve = sell),
-// then pull each parent transaction for the real ETH amounts.
+// Attribution that survives routers/aggregators (fomo app etc.):
+// group transfers by tx, compute each wallet's NET token delta inside the
+// tx, and read the curve's ETH in/out from the tx's internal transactions.
+// Whoever net-GAINED tokens paid the ETH that entered the curve (buy);
+// whoever net-LOST tokens receives credit for the ETH the curve paid out
+// (sell) — no matter how many hops the trade routed through.
 const transfers = await pageAll(`/tokens/${OLD_TOKEN}/transfers`, (t) => ({
   from: (t.from?.hash || '').toLowerCase(),
   to: (t.to?.hash || '').toLowerCase(),
+  value: parseFloat(t.total?.value || 0),
   hash: t.transaction_hash || t.tx_hash || '',
 }));
-const buyTx = new Map();   // hash -> buyer (token receiver)
-const sellTx = new Map();  // hash -> seller (token sender)
+const byTx = new Map();
 for (const t of transfers) {
   if (!t.hash) continue;
-  if (t.from === CURVE) buyTx.set(t.hash, t.to);
-  if (t.to === CURVE) sellTx.set(t.hash, t.from);
+  if (!byTx.has(t.hash)) byTx.set(t.hash, []);
+  byTx.get(t.hash).push(t);
 }
-console.log(`trade txs: ${buyTx.size} buys, ${sellTx.size} sells`);
+// only txs that actually touch the curve are trades
+const tradeTxs = [...byTx.entries()].filter(([, ts]) =>
+  ts.some((t) => t.from === CURVE || t.to === CURVE));
+console.log(`trade txs: ${tradeTxs.length}`);
 
 async function mapLimit(items, limit, fn) {
   const arr = [...items]; let i = 0;
@@ -84,27 +90,41 @@ async function mapLimit(items, limit, fn) {
   }));
 }
 let _done = 0;
-const get = async (path) => {
-  const r = await fetchJson(`${API}${path}`);
-  if (++_done % 50 === 0) console.log(`  …${_done} txs fetched`);
-  return r;
-};
 
-await mapLimit(buyTx, 20, async ([hash, buyer]) => {
-  const tx = await get(`/transactions/${hash}`);
-  if (tx?.status !== 'ok') return;
-  const value = parseFloat(tx.value || 0) / 1e18;
-  const sender = (tx.from?.hash || buyer).toLowerCase();
-  if (value > 0) flow(sender).in += value;
-});
-await mapLimit(sellTx, 20, async ([hash, seller]) => {
-  const itx = await get(`/transactions/${hash}/internal-transactions`);
-  // ETH the seller actually received back in this tx
+await mapLimit(tradeTxs, 20, async ([hash, ts]) => {
+  if (++_done % 100 === 0) console.log(`  …${_done}/${tradeTxs.length} txs`);
+  // net token delta per wallet inside this tx
+  const delta = new Map();
+  for (const t of ts) {
+    delta.set(t.from, (delta.get(t.from) || 0) - t.value);
+    delta.set(t.to, (delta.get(t.to) || 0) + t.value);
+  }
+  delta.delete(CURVE);
+  delta.delete('0x0000000000000000000000000000000000000000');
+  let gainer = null, loser = null, gMax = 0, lMax = 0;
+  for (const [w, d] of delta) {
+    if (d > gMax) { gMax = d; gainer = w; }
+    if (d < lMax) { lMax = d; loser = w; }
+  }
+  // curve ETH legs from the tx's internal transactions
+  const itx = await fetchJson(`${API}/transactions/${hash}/internal-transactions`);
+  let ethIn = 0, ethOut = 0;
   for (const it of itx?.items || []) {
+    const from = (it.from?.hash || '').toLowerCase();
     const to = (it.to?.hash || '').toLowerCase();
     const v = parseFloat(it.value || 0) / 1e18;
-    if (to === seller && v > 0) flow(seller).out += v;
+    if (v <= 0) continue;
+    if (to === CURVE) ethIn += v;
+    if (from === CURVE) ethOut += v;
   }
+  // direct top-level ETH into the curve (rare, but free to include)
+  if (ethIn === 0) {
+    const tx = await fetchJson(`${API}/transactions/${hash}`);
+    const v = parseFloat(tx?.value || 0) / 1e18;
+    if (v > 0 && (tx?.to?.hash || '').toLowerCase() === CURVE) ethIn = v;
+  }
+  if (gainer && ethIn > 0) flow(gainer).in += ethIn;
+  if (loser && ethOut > 0) flow(loser).out += ethOut;
 });
 
 // Victims = net losers, excluding protocol machinery
