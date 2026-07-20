@@ -147,6 +147,8 @@ export async function getFreeCollateral() {
   }
 }
 
+// Shape matches ostium.getAllPositions exactly — getLivePositions and the
+// dashboard consume this contract.
 export async function getAllPositions() {
   try {
     const st = await clearinghouse();
@@ -155,15 +157,19 @@ export async function getAllPositions() {
       const p = ap.position;
       const szi = parseFloat(p?.szi || 0);
       if (!szi) continue;
+      const entry = parseFloat(p.entryPx) || 0;
+      const sizeUsd = Math.abs(parseFloat(p.positionValue)) || Math.abs(szi) * entry;
       out.push({
         market: (p.coin || '').replace(`${DEX}:`, ''),
         side: szi > 0 ? 'long' : 'short',
-        size: Math.abs(szi),
-        entryPrice: parseFloat(p.entryPx) || 0,
-        unrealisedPnl: parseFloat(p.unrealizedPnl) || 0,
+        sizeUsd,
         collateralUsd: parseFloat(p.marginUsed) || 0,
+        entryPrice: entry,
+        currentPrice: szi !== 0 ? sizeUsd / Math.abs(szi) : entry,
+        unrealisedPnl: parseFloat(p.unrealizedPnl) || 0,
         leverage: parseFloat(p.leverage?.value) || 0,
         liquidationPrice: parseFloat(p.liquidationPx) || 0,
+        sizeShares: Math.abs(szi),
       });
     }
     return out;
@@ -173,16 +179,34 @@ export async function getAllPositions() {
   }
 }
 
+// Shape matches ostium.getPositionPnl exactly — the workers' double-open
+// guard (live.exists) and risk-manager math (pnl/size/entry/collateralUsd/
+// currentPrice) rely on this contract.
 export async function getPositionPnl(market) {
-  const positions = await getAllPositions();
-  const p = positions.find((x) => x.market === (SYMBOL_ALIAS[market] || market).toUpperCase());
-  if (!p) return null;
-  return {
-    market, side: p.side, size: p.size, entryPrice: p.entryPrice,
-    unrealisedPnl: p.unrealisedPnl, collateralUsd: p.collateralUsd,
-    leverage: p.leverage, liquidationPrice: p.liquidationPrice,
-    pnlPct: p.collateralUsd > 0 ? (p.unrealisedPnl / p.collateralUsd) * 100 : 0,
-  };
+  try {
+    const want = (SYMBOL_ALIAS[market] || market).toUpperCase();
+    const positions = await getAllPositions();
+    const p = positions.find((x) => x.market === want);
+    if (!p) return { exists: false, pnl: 0, size: 0, entry: 0 };
+
+    let currentPrice = p.currentPrice;
+    try { currentPrice = (await getMidPrice(market)) || currentPrice; } catch {}
+
+    return {
+      exists: true,
+      pnl: p.unrealisedPnl,
+      size: p.sizeUsd,
+      entry: p.entryPrice,
+      collateralUsd: p.collateralUsd,
+      side: p.side,
+      currentPrice,
+      liquidationPrice: p.liquidationPrice,
+      leverage: p.leverage,
+    };
+  } catch (err) {
+    logger.error('HL getPositionPnl error', { market, error: err.message });
+    return { exists: false, pnl: 0, size: 0, entry: 0, error: err.message };
+  }
 }
 
 export async function getFills(limit = 60) {
@@ -273,10 +297,11 @@ export async function reducePosition(market, pct) {
   if (!p) return { success: false, skipped: 'no-position' };
   const client = await getClient();
   const pair = await findPair(market);
-  const closeSize = roundSize(p.size * Math.min(Math.max(pct, 0), 1), pair.szDecimals);
+  // partial close via marketClose(symbol, size) — SDK handles reduce
+  // semantics, so a rounding overshoot can never flip the position
+  const closeSize = roundSize(p.sizeShares * Math.min(Math.max(pct, 0), 1), pair.szDecimals);
   if (closeSize <= 0) return { success: false, skipped: 'size-too-small' };
-  // reduce = market order in the opposite direction, reduce-only
-  const result = await client.custom.marketOpen(pair.name, p.side === 'short', closeSize, undefined, SLIPPAGE, undefined, true);
+  const result = await client.custom.marketClose(pair.name, closeSize, undefined, SLIPPAGE);
   const status = result?.response?.data?.statuses?.[0];
   return { txSig: String(status?.filled?.oid || 'reduced'), success: true };
 }
