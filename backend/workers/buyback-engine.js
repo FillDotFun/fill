@@ -1,7 +1,7 @@
 import logger from '../utils/logger.js';
 import config from '../config.js';
 import * as db from '../db/firebase.js';
-import { swapEthForToken, burnTokens, getEthPrice } from '../services/uniswap.js';
+import { swapEthForToken, burnTokens, burnAllTokens, getEthPrice } from '../services/uniswap.js';
 import { getTokenBalance, getEthBalance } from '../services/chain.js';
 import { getAllTokens } from '../db/firebase.js';
 import * as notifier from '../services/notifier.js';
@@ -242,7 +242,7 @@ async function sweepUnburnedTokens() {
     try {
       const balance = await getTokenBalance(config.PROTOCOL_ADDRESS, token);
       if (!(balance > 1e-6)) continue;
-      const burnHash = await burnTokens(token, balance);
+      const burnHash = await burnAllTokens(token); // raw balance, no float drift
       await db.addBuyback({
         tokenAddress: token,
         targetToken: token,

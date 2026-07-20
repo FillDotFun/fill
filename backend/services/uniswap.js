@@ -90,11 +90,33 @@ export async function burnTokens(tokenAddress, amount, decimals = 18) {
 
   const signer = getSigner();
   const token = getErc20(tokenAddress, signer);
-  const rawAmount = parseUnits(amount.toFixed(Math.min(decimals, 18)), decimals);
+  // Never trust a float round-trip near the full balance: converting a
+  // formatted balance back to wei can round UP past what we actually hold
+  // (ERC20InsufficientBalance revert). Clamp to the raw on-chain balance.
+  let rawAmount = parseUnits(amount.toFixed(Math.min(decimals, 18)), decimals);
+  const rawBalance = await token.balanceOf(config.PROTOCOL_ADDRESS);
+  if (rawAmount > rawBalance) rawAmount = rawBalance;
+  if (rawAmount <= 0n) return null;
 
   const resp = await token.transfer(DEAD_ADDRESS, rawAmount);
   const receipt = await resp.wait();
   logger.info('Tokens burned (sent to dead address)', { tokenAddress, amount, hash: receipt.hash });
+  return receipt.hash;
+}
+
+/**
+ * Burn the ENTIRE wallet balance of a token, using the raw on-chain
+ * amount — exact, no float precision anywhere.
+ */
+export async function burnAllTokens(tokenAddress) {
+  if (!config.protocolWallet) throw new Error('Protocol wallet not loaded');
+  const signer = getSigner();
+  const token = getErc20(tokenAddress, signer);
+  const rawBalance = await token.balanceOf(config.PROTOCOL_ADDRESS);
+  if (rawBalance <= 0n) return null;
+  const resp = await token.transfer(DEAD_ADDRESS, rawBalance);
+  const receipt = await resp.wait();
+  logger.info('Full balance burned (sent to dead address)', { tokenAddress, hash: receipt.hash });
   return receipt.hash;
 }
 
