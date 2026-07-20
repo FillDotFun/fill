@@ -531,14 +531,40 @@ export async function listLaunchpads(_req, res) {
 // ---------------------------------------------------------------------------
 // Markets — list all available Ostium stock perp markets
 // ---------------------------------------------------------------------------
+let _marketsCache = { data: null, expiresAt: 0 };
+
 export async function listMarkets(_req, res) {
-  const activeId = await ostium.activeVenueId().catch(() => config.TRADING_VENUE);
-  const markets = config.STOCK_MARKETS.map((symbol) => ({
-    symbol,
-    provider: activeId,
-    maxLeverage: config.OSTIUM.MAX_LEVERAGE,
-  }));
-  res.json({ markets, venue: activeId });
+  try {
+    if (_marketsCache.data && Date.now() < _marketsCache.expiresAt) {
+      return res.json(_marketsCache.data);
+    }
+    const activeId = await ostium.activeVenueId().catch(() => config.TRADING_VENUE);
+
+    // Live per-symbol truth from the ACTIVE venue: availability + the real
+    // leverage cap (e.g. Hyperliquid equities are 20x majors / 10x rest —
+    // never advertise leverage the venue won't accept).
+    const markets = await Promise.all(config.STOCK_MARKETS.map(async (symbol) => {
+      try {
+        const pair = await ostium.findPair(symbol);
+        return {
+          symbol,
+          provider: activeId,
+          available: !!pair,
+          maxLeverage: Math.min(pair?.maxLeverage || 0, config.OSTIUM.MAX_LEVERAGE) || 0,
+        };
+      } catch {
+        return { symbol, provider: activeId, available: false, maxLeverage: 0 };
+      }
+    }));
+
+    const venueMaxLeverage = Math.max(0, ...markets.map((m) => m.maxLeverage));
+    const data = { markets, venue: activeId, venueMaxLeverage };
+    _marketsCache = { data, expiresAt: Date.now() + 60_000 };
+    res.json(data);
+  } catch (err) {
+    logger.error('listMarkets error', { error: err.message });
+    res.status(500).json({ error: 'Failed to fetch markets' });
+  }
 }
 
 // Which perp venue the engine trades on, and every venue's live state.

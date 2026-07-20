@@ -54,15 +54,20 @@ function initEngineStatus() {
 
       if (live) live.innerHTML = '<span class="pulse-dot"></span> LIVE';
 
-      // perp venue line — the active venue + a note if a venue is paused
+      // perp venue line — the active venue, its REAL leverage ceiling, and
+      // a note if a venue is paused
       const venueLine = document.getElementById('hero-venue-line');
       if (venueLine && d.venue) {
         const act = (d.venue.venues || []).find(v => v.active);
         const paused = (d.venue.venues || []).find(v => v.paused);
         const note = paused ? `<span class="k">·</span><span style="color:var(--yellow);">${paused.name} paused</span>` : '';
+        let lev = '';
+        try {
+          const mk = await (await fetch('/api/v1/markets')).json();
+          if (mk?.venueMaxLeverage) lev = `<span class="k">·</span><span>up&nbsp;to&nbsp;${mk.venueMaxLeverage}x</span>`;
+        } catch {}
         venueLine.innerHTML =
-          `<span class="k">perp&nbsp;venue</span><span class="cy">${act ? act.name.toLowerCase() : '—'}</span>` +
-          `<span class="k">·</span><span>up&nbsp;to&nbsp;50x</span>${note}`;
+          `<span class="k">perp&nbsp;venue</span><span class="cy">${act ? act.name.toLowerCase() : '—'}</span>${lev}${note}`;
       }
 
       if (engineLine) {

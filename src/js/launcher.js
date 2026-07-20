@@ -155,12 +155,62 @@ function renderSetupInstructions() {
   setupCopyButtons();
 }
 
+// Live per-market truth from the active venue (/api/v1/markets):
+// availability + REAL leverage caps (e.g. Hyperliquid equities are 20x
+// majors / 10x rest — never offer leverage the venue won't accept).
+let liveMarkets = null;      // symbol -> { available, maxLeverage }
+let marketMaxLev = 50;       // cap of the currently selected stock
+
+function marketCapFor(symbol) {
+  const m = liveMarkets?.[symbol];
+  if (!m) return 50; // no live data yet — backend clamps at trade time anyway
+  return m.available ? (m.maxLeverage || 50) : 0;
+}
+
+async function loadLiveMarkets() {
+  try {
+    const res = await fetch('/api/v1/markets');
+    if (!res.ok) return;
+    const data = await res.json();
+    liveMarkets = {};
+    for (const m of (data.markets || [])) liveMarkets[m.symbol] = m;
+
+    // Section label: the honest venue + its real ceiling
+    const label = document.querySelector('.token-section-label');
+    if (label && data.venue && data.venueMaxLeverage) {
+      label.textContent = `STOCK PERPS · ${String(data.venue).toUpperCase()} · UP TO ${data.venueMaxLeverage}X`;
+    }
+
+    // Annotate every card with its real cap; grey out unavailable markets
+    document.querySelectorAll('#popular-tokens-grid .popular-token-card').forEach(card => {
+      const sym = card.getAttribute('data-symbol');
+      const m = liveMarkets[sym];
+      if (!m) return;
+      const badge = card.querySelector('.token-perps-badge');
+      if (m.available) {
+        if (badge) badge.textContent = `${m.maxLeverage}X`;
+        card.classList.remove('no-perps');
+      } else {
+        if (badge) badge.textContent = 'PAUSED';
+        card.classList.add('no-perps');
+        card.classList.remove('selected');
+      }
+    });
+
+    // Refresh the cap for whatever is currently selected
+    marketMaxLev = marketCapFor(selectedToken || 'AAPL');
+    updateLeverageCaps();
+  } catch {
+    // no live data — static fallback stays; backend clamps at trade time
+  }
+}
+
 function renderPopularTokens() {
   const grid = document.getElementById('popular-tokens-grid');
   if (!grid) return;
 
   grid.innerHTML = `
-    <div class="token-section-label" style="grid-column:1/-1;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">STOCK PERPS · UP TO 50X</div>
+    <div class="token-section-label" style="grid-column:1/-1;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">STOCK PERPS · LOADING LIVE CAPS…</div>
     ${POPULAR_TOKENS.map(t => `
       <div class="popular-token-card glass-card perps-available" data-symbol="${t.symbol}" data-provider="${t.provider}" data-maxlev="${t.maxLev}">
         <div class="token-perps-badge">PERP</div>
@@ -172,14 +222,17 @@ function renderPopularTokens() {
 
   grid.querySelectorAll('.popular-token-card').forEach(card => {
     card.addEventListener('click', () => {
+      // Unavailable on the active venue -> not selectable
+      if (card.classList.contains('no-perps')) return;
+
       grid.querySelectorAll('.popular-token-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
 
       selectedToken = card.getAttribute('data-symbol');
 
-      // Update leverage caps based on provider
-      const maxLev = parseInt(card.getAttribute('data-maxlev')) || 50;
-      updateLeverageCaps(maxLev);
+      // Effective cap = the venue's REAL cap for this market
+      marketMaxLev = marketCapFor(selectedToken);
+      updateLeverageCaps();
 
       const nameInput = document.getElementById('derivative-name');
       if (nameInput && !nameInput.value) {
@@ -190,16 +243,23 @@ function renderPopularTokens() {
       }
     });
   });
+
+  loadLiveMarkets();
 }
 
-function updateLeverageCaps(maxLev) {
+function updateLeverageCaps() {
   const container = document.getElementById('leverage-options');
   const levLabel = document.getElementById('selected-leverage');
   if (!container) return;
 
-  // Define all possible leverage tiers (Ostium max is 50x)
+  // Effective ceiling = the tightest of the venue's market cap and the
+  // strategy mode's cap — the same min() the engine applies at trade time
+  const mode = STRATEGIES.find(s => s.id === selectedStrategy) || STRATEGIES[2];
+  const maxLev = Math.max(1, Math.min(marketMaxLev || 50, mode.maxLev || 50));
+
   const allTiers = [5, 10, 20, 30, 40, 50];
   const validTiers = allTiers.filter(t => t <= maxLev);
+  if (!validTiers.length) validTiers.push(maxLev);
 
   // Regenerate buttons with only valid tiers
   container.innerHTML = validTiers.map(lev => {
@@ -275,7 +335,7 @@ function applyStrategyConstraints() {
   }
 
   if (!disabled) {
-    updateLeverageCaps(mode.maxLev);
+    updateLeverageCaps();
   }
 
   if (summary) {

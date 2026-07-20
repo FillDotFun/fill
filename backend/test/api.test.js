@@ -42,7 +42,13 @@ test('GET /markets lists stock perps on the active venue', async () => {
   const d = await r.json();
   assert.ok(d.markets.length >= 10);
   assert.ok(['hyperliquid', 'ostium'].includes(d.venue), 'names the active venue');
-  assert.ok(d.markets.every(m => m.provider === d.venue && m.maxLeverage === 50));
+  // Leverage caps are the ACTIVE venue's real numbers (HL: 20x majors /
+  // 10x rest; Ostium: up to 50x) — never a hardcoded 50
+  assert.ok(d.markets.every(m => m.provider === d.venue));
+  assert.ok(d.markets.every(m => typeof m.available === 'boolean'));
+  assert.ok(d.markets.every(m => Number.isFinite(m.maxLeverage) && m.maxLeverage >= 0 && m.maxLeverage <= 50));
+  assert.ok(d.markets.some(m => m.available && m.maxLeverage > 0), 'at least one tradeable market');
+  assert.ok(Number.isFinite(d.venueMaxLeverage) && d.venueMaxLeverage > 0);
 });
 
 test('GET /venues reports active venue + per-venue state', async () => {
