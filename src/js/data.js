@@ -13,7 +13,7 @@ export const ARBITRUM_EXPLORER_URL = 'https://arbiscan.io';
 // Pons ("Creator wallet") and LaunchHood ("Reward recipient") both have a
 // fee-routing field at launch — cleanest integration.
 export const LAUNCHPADS = [
-  { id: 'pons',        name: 'Pons',        url: 'https://pons.family',    support: 'full',
+  { id: 'pons',        name: 'Pons',        url: 'https://ponsfamily.com/launchpad',    support: 'full',
     tagline: 'Creator wallet field routes fees straight to the engine' },
   { id: 'launchhood',  name: 'LaunchHood',  url: 'https://launchhood.com', support: 'full',
     tagline: 'Reward recipient field routes fees straight to the engine' },

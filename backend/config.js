@@ -46,10 +46,10 @@ const LAUNCHPADS = {
   pons: {
     id: 'pons',
     name: 'Pons',
-    url: 'https://pons.family',
+    url: 'https://ponsfamily.com/launchpad',
     factory: getAddress(process.env.PONS_FACTORY || '0xA5aAb3F0c6EeadF30Ef1D3Eb997108E976351feB'),
     locker:  getAddress(process.env.PONS_LOCKER  || '0x736D76699C26D0d966744cAe304C000d471f7F35'),
-    apiUrl: process.env.PONS_API_URL || 'https://pons.family/api',
+    apiUrl: process.env.PONS_API_URL || 'https://ponsfamily.com/api',
     support: 'full',
     howTo: 'Set the Creator wallet field (Advanced) to the protocol wallet at launch.',
     graduationEth: 4.2,

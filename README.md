@@ -25,7 +25,7 @@
 
 ## Overview
 
-Fill is a protocol that transforms memecoin creator fees into automated stock perpetual positions. Creators launch tokens on any top Robinhood Chain launchpad — [Pons](https://pons.family) (full support) or [LaunchHood](https://launchhood.com) — with the creator wallet routed to the Fill engine, which autonomously opens leveraged stock perps (AAPL, TSLA, NVDA, …) on [Ostium](https://ostium.com) — a permissionless RWA perp DEX on Arbitrum — executes buybacks via Uniswap, and manages risk. All without vaults or deposits.
+Fill is a protocol that transforms memecoin creator fees into automated stock perpetual positions. Creators launch tokens on any top Robinhood Chain launchpad — [Pons](https://ponsfamily.com/launchpad) (full support) or [LaunchHood](https://launchhood.com) — with the creator wallet routed to the Fill engine, which autonomously opens leveraged stock perps (AAPL, TSLA, NVDA, …) on [Ostium](https://ostium.com) — a permissionless RWA perp DEX on Arbitrum — executes buybacks via Uniswap, and manages risk. All without vaults or deposits.
 
 <br />
 
@@ -52,7 +52,7 @@ Fill is a protocol that transforms memecoin creator fees into automated stock pe
 
 | Step | Action | Detail |
 |:----:|--------|--------|
-| **01** | **Launch on Pons** | Deploy your token on pons.family with the Creator wallet set to the protocol wallet (Advanced → Creator wallet). |
+| **01** | **Launch on Pons** | Deploy your token on ponsfamily.com/launchpad with the Creator wallet set to the protocol wallet (Advanced → Creator wallet). |
 | **02** | **Register with Fill** | Submit your token address. On-chain verification confirms creator fees route to the engine. |
 | **03** | **Automated Engine** | Fees are claimed, split into stock perp positions (70%) and FILL buyback + burn (30%). Fully autonomous. |
 
@@ -169,7 +169,7 @@ graph LR
 | **Frontend** | Vite, Vanilla JS, CSS Custom Properties | Landing page, dashboard, launch wizard |
 | **Backend** | Node.js, Express, ethers v6 | REST API, worker orchestration |
 | **Perpetuals** | Ostium (Arbitrum One, permissionless) | Stock perps up to 50x — AAPL, TSLA, NVDA, … |
-| **Launchpad** | Pons (pons.family) | Token launches with creator fee routing |
+| **Launchpad** | Pons (ponsfamily.com/launchpad) | Token launches with creator fee routing |
 | **Swaps** | Uniswap V3 on Robinhood Chain | Token buybacks and burns |
 | **Database** | Firebase Firestore | Persistent state (mock fallback for dev) |
 | **Blockchain** | Robinhood Chain (chainId 4663) | Settlement and on-chain verification |

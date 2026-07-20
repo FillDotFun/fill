@@ -123,10 +123,10 @@ function renderSetupInstructions() {
 
   const STEP_SETS = {
     pons: [
-      `Go to <strong>pons.family → Create</strong> and fill in your token's name, ticker, description and image.
-       ${fig('/guide/pons-form.png', 'pons.family/launchpad/create', 'The Pons launch form — fill the basics here. The 0.0005 ETH launch fee is shown on the right.')}`,
+      `Go to <strong>ponsfamily.com/launchpad → Create</strong> and fill in your token's name, ticker, description and image.
+       ${fig('/guide/pons-form.png', 'ponsfamily.com/launchpad/create', 'The Pons launch form — fill the basics here. The 0.0005 ETH launch fee is shown on the right.')}`,
       `Open the <strong>Advanced</strong> section and paste the protocol wallet into the <strong>Creator wallet</strong> field:${walletRow}
-       ${fig('/guide/pons-advanced.png', 'pons.family — Advanced section', 'Exactly like this — the address shown IS the protocol wallet. Pons’ own hint confirms it: “receives the creator share of trading fees (70%)”.')}`,
+       ${fig('/guide/pons-advanced.png', 'ponsfamily.com — Advanced section', 'Exactly like this — the address shown IS the protocol wallet. Pons’ own hint confirms it: “receives the creator share of trading fees (70%)”.')}`,
       `Complete the launch (0.0005 ETH fee). At <strong>4.2 ETH raised</strong> your token graduates to a locked Uniswap pool — creator fees flow to the engine forever.`,
       `Copy your new <strong>token address</strong> (0x…) and paste it in the next step to verify &amp; register.`,
     ],
