@@ -132,10 +132,14 @@ export async function isStockMarketOpen() {
 
 // ── Account state ───────────────────────────────────────────────────────────
 
-async function clearinghouse() {
-  // Raw info endpoint (no auth, no SDK surface drift) — the SDK is only
-  // needed for the signed write path.
-  return info({ type: 'clearinghouseState', user: config.PROTOCOL_ADDRESS });
+// HIP-3 builder dexes have SEGREGATED collateral: USDC in the main perp
+// account can't margin xyz trades until it's moved into the xyz dex
+// (sendAsset self-transfer). Positions + margin for our markets live in
+// the xyz clearinghouse, so all account reads default to dex=xyz.
+async function clearinghouse(dex = DEX) {
+  const body = { type: 'clearinghouseState', user: config.PROTOCOL_ADDRESS };
+  if (dex) body.dex = dex;
+  return info(body);
 }
 
 export async function getFreeCollateral() {
@@ -145,6 +149,17 @@ export async function getFreeCollateral() {
     return parseFloat(st?.withdrawable ?? st?.marginSummary?.accountValue ?? 0) || 0;
   } catch (err) {
     logger.debug('HL getFreeCollateral failed', { error: err.message });
+    return 0;
+  }
+}
+
+// USDC sitting in the MAIN perp account (where bridge deposits land) —
+// a waypoint on the way into the xyz dex.
+async function getMainFreeCollateral() {
+  try {
+    const st = await clearinghouse('');
+    return parseFloat(st?.withdrawable ?? 0) || 0;
+  } catch {
     return 0;
   }
 }
@@ -417,10 +432,47 @@ export async function getArbitrumUsdc() {
   return parseFloat(formatUnits(bal, 6)) || 0;
 }
 
+// EIP-712 field layout for the sendAsset user-signed action (must match
+// the official SDK's SEND_ASSET_SIGN_TYPES exactly).
+const SEND_ASSET_SIGN_TYPES = [
+  { name: 'hyperliquidChain', type: 'string' },
+  { name: 'destination', type: 'string' },
+  { name: 'sourceDex', type: 'string' },
+  { name: 'destinationDex', type: 'string' },
+  { name: 'token', type: 'string' },
+  { name: 'amount', type: 'string' },
+  { name: 'fromSubAccount', type: 'string' },
+  { name: 'nonce', type: 'uint64' },
+];
+
+// Move USDC main perp account -> xyz dex (self sendAsset). Builder-dex
+// margin is segregated, so this is the required second hop after a bridge
+// deposit lands in the main account.
+async function transferToXyz(amount) {
+  const { signUserSignedAction } = await loadSdk();
+  const nonce = Date.now();
+  const action = {
+    type: 'sendAsset',
+    signatureChainId: '0xa4b1',       // matches the helper's mainnet domain (42161)
+    hyperliquidChain: 'Mainnet',
+    destination: config.PROTOCOL_ADDRESS,
+    sourceDex: '',                    // "" = the default perp dex
+    destinationDex: DEX,
+    token: 'USDC',
+    amount: amount.toFixed(2),
+    fromSubAccount: '',
+    nonce,
+  };
+  const signature = await signUserSignedAction(
+    config.protocolWallet, action, SEND_ASSET_SIGN_TYPES, 'HyperliquidTransaction:SendAsset', true,
+  );
+  return exchangePost(action, nonce, signature);
+}
+
 /**
- * Called once per position-manager cycle (via the venue router). When
- * Hyperliquid is the active venue and its account can't fund a minimum
- * position while USDC sits idle on Arbitrum, move the idle USDC across.
+ * Called once per position-manager cycle (via the venue router). Idempotent
+ * capital pipeline — each run performs whichever hop is currently possible:
+ *   Arbitrum USDC → Bridge2 → HL main account → xyz dex (where margin lives)
  * Set AUTO_DEPOSIT=off to disable.
  */
 export async function ensureCollateral() {
@@ -428,9 +480,25 @@ export async function ensureCollateral() {
     if ((process.env.AUTO_DEPOSIT || 'on') === 'off') return null;
     if (!config.protocolWallet) return null;
 
-    const [arbUsdc, hlFree] = await Promise.all([getArbitrumUsdc(), getFreeCollateral()]);
+    const [arbUsdc, xyzFree, mainFree] = await Promise.all([
+      getArbitrumUsdc(), getFreeCollateral(), getMainFreeCollateral(),
+    ]);
+
+    // Hop 2 first: USDC parked in the main account moves into the xyz dex
+    // whenever the dex can't fund a minimum position.
+    if (xyzFree < config.RISK.minDeployUsd && mainFree >= 1) {
+      const amount = Math.floor(mainFree * 100) / 100;
+      logger.info('Moving USDC into the xyz dex (segregated margin)', {
+        amount: amount.toFixed(2), xyzFree: xyzFree.toFixed(2),
+      });
+      await transferToXyz(amount);
+      logger.info('USDC now in the xyz dex — tradeable next cycle', { amount: amount.toFixed(2) });
+      return { amount, hash: 'sendAsset:main->xyz' };
+    }
+
+    // Hop 1: idle Arbitrum USDC bridges to the HL main account.
     const reserve = parseFloat(process.env.ARBITRUM_USDC_RESERVE) || 0;
-    const amount = computeAutoDeposit(arbUsdc, hlFree, config.RISK.minDeployUsd, reserve);
+    const amount = computeAutoDeposit(arbUsdc, xyzFree + mainFree, config.RISK.minDeployUsd, reserve);
     if (amount <= 0) return null;
 
     const { JsonRpcProvider, Contract, parseUnits, formatUnits } = await import('ethers');
