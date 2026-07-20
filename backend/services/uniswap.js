@@ -122,7 +122,25 @@ export async function getEthPrice() {
     }
   } catch {}
 
-  // Fallback: Binance
+  // Fallback: Hyperliquid mids — unauthenticated, no rate limits from
+  // datacenter IPs (CoinGecko throttles them, Binance geo-blocks 451)
+  try {
+    const res = await fetch('https://api.hyperliquid.xyz/info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'allMids' }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const price = parseFloat(data?.ETH) || 0;
+      if (price > 0) {
+        _ethPriceCache = { price, at: Date.now() };
+        return price;
+      }
+    }
+  } catch {}
+
+  // Fallback: Binance (geo-blocked from US datacenters, works elsewhere)
   try {
     const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT');
     if (res.ok) {
