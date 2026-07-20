@@ -440,6 +440,13 @@
         </details>
 
         <details class="faq-item">
+          <summary>Why isn't my token trading yet?</summary>
+          <div class="faq-a">
+            The engine checks every token every few minutes, and it only pulls the trigger when <em>all</em> of its gates pass — each token's live verdict is shown on the <a href="/dashboard">dashboard</a>. The gates: <strong>fee budget</strong> — a token can only trade capital its own creator fees have earned, so a fresh token trades after its first fees accrue; <strong>signal</strong> — entries need the market's momentum/RSI score to clear a threshold (the engine gets pickier after losses); <strong>session</strong> — conservative-mode tokens only trade regular NYSE hours, while degen trades every session; and <strong>venue state</strong> — if the perp venue is paused, everything waits. "Not trading" almost always means the engine is being honest about one of these, not that something is broken.
+          </div>
+        </details>
+
+        <details class="faq-item">
           <summary>Where does the trading actually happen?</summary>
           <div class="faq-a">
             Fees are claimed in ETH on Robinhood Chain, where buybacks and burns also execute via Uniswap. The perp positions themselves trade on the active perp venue — currently Hyperliquid — collateralised in USDC held by the protocol wallet. (Ostium on Arbitrum resumes automatically once it re-opens after its July 2026 exploit pause.) Both sides are fully on-chain and verifiable.

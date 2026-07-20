@@ -154,6 +154,17 @@ async function recordTrade(win, pnl, leverage, tokenAddress = null) {
  * If we're on a losing streak, require a higher score (be pickier).
  * If we're winning, stay aggressive.
  */
+/**
+ * Persist the engine's per-cycle verdict onto the token doc so the site can
+ * show WHY a token is (or isn't) trading right now — honest transparency,
+ * fed by the same branch the engine actually took.
+ */
+async function recordDecision(tokenAddress, verdict, detail = {}) {
+  try {
+    await db.setToken(tokenAddress, { lastDecision: { verdict, ...detail, at: Date.now() } });
+  } catch {}
+}
+
 async function getEntryThreshold() {
   const history = await getTradeHistory();
   const recent = history.recentTrades.slice(-10); // last 10 trades
@@ -527,6 +538,9 @@ export async function managePositionForToken(tokenAddress) {
         priceChange: (effectivePct * 100).toFixed(2) + '%',
       });
 
+      await recordDecision(tokenAddress, 'position-open', {
+        market, pnl: Number(pnl.toFixed(2)),
+      });
       return null;
     }
 
@@ -535,10 +549,12 @@ export async function managePositionForToken(tokenAddress) {
     // -------------------------------------------------------------------
     if (!mode.trade) {
       logger.debug('Strategy mode is off — fees accrue to buybacks only', { token: tokenAddress });
+      await recordDecision(tokenAddress, 'trading-off');
       return null;
     }
     if (mode.rthOnly && !RTH_SESSIONS.includes(getSession())) {
       logger.debug('Outside regular trading hours for this strategy', { token: tokenAddress, strategy: mode.id });
+      await recordDecision(tokenAddress, 'waiting-market-hours', { strategy: mode.id });
       return null;
     }
 
@@ -567,6 +583,7 @@ export async function managePositionForToken(tokenAddress) {
 
     if (available < config.RISK.minDeployUsd) {
       logger.debug('Not enough USDC on Arbitrum', { token: tokenAddress, available: available.toFixed(2) });
+      await recordDecision(tokenAddress, 'collateral-routing', { available: Number(available.toFixed(2)) });
       return null;
     }
 
@@ -607,6 +624,10 @@ export async function managePositionForToken(tokenAddress) {
           rsi: signal.details?.rsi?.value,
           session: signal.details?.session?.name,
         });
+        await recordDecision(tokenAddress, 'signal-below-threshold', {
+          market, score: signal.score, required: requiredScore,
+          direction: signal.direction,
+        });
         return null;
       }
       signalLeverage = Math.max(signal.leverage || 20, 10);
@@ -634,6 +655,9 @@ export async function managePositionForToken(tokenAddress) {
         token: tokenAddress, budgetEth: budgetEth.toFixed(6),
         budgetUsd: budgetUsd.toFixed(2), minDeployUsd: config.RISK.minDeployUsd,
       });
+      await recordDecision(tokenAddress, 'budget-too-small', {
+        budgetUsd: Number(budgetUsd.toFixed(2)), minDeployUsd: config.RISK.minDeployUsd,
+      });
       return null;
     }
 
@@ -659,7 +683,10 @@ export async function managePositionForToken(tokenAddress) {
     });
 
     const result = await openPositionSafely(market, sizeUsd, deployAmount, direction);
-    if (result?.skipped) return null;
+    if (result?.skipped) {
+      await recordDecision(tokenAddress, 'venue-skip', { market, reason: result.skipped });
+      return null;
+    }
 
     await db.setPosition(tokenAddress, {
       tokenAddress,
@@ -689,6 +716,7 @@ export async function managePositionForToken(tokenAddress) {
     });
 
     logger.info('Position opened', { token: tokenAddress, market, direction, leverage: effectiveLeverage + 'x', txSig: result.txSig });
+    await recordDecision(tokenAddress, 'position-open', { market, pnl: 0 });
     return { action: 'open', txSig: result.txSig, deployedUsd: deployAmount };
   } catch (err) {
     logger.error('Position management failed', { token: tokenAddress, error: err.message });

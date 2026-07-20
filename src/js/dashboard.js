@@ -75,16 +75,27 @@ async function fetchData() {
       const address = t.address || t.id;
       const pos = positions.find(p => p.tokenAddress === address || p.id === address) || {};
 
-      // Determine status reason
+      // Status reason — prefer the engine's own persisted verdict (written
+      // by the position-manager on the exact branch it took last cycle)
       let statusText = 'Collecting fees';
-      if (pos.positionExists) {
+      const d = t.lastDecision;
+      if (d?.verdict) {
+        statusText = ({
+          'position-open':          `Position open on ${d.market || '--'}${typeof d.pnl === 'number' ? ` (${d.pnl >= 0 ? '+' : ''}$${d.pnl.toFixed(2)})` : ''}`,
+          'signal-below-threshold': `Waiting for signal — ${d.market || '--'} at ${d.score} (needs ${d.required})`,
+          'budget-too-small':       `Earning fees — $${(d.budgetUsd ?? 0).toFixed(2)} of $${d.minDeployUsd ?? '--'} to start trading`,
+          'waiting-market-hours':   'Conservative mode — trades when NYSE opens',
+          'trading-off':            'Trading off — fees go to buybacks only',
+          'collateral-routing':     'Routing collateral to the trading venue',
+          'venue-skip':             d.reason === 'market-closed' ? 'Market closed — resumes next session' : 'Venue paused — auto-resumes',
+        })[d.verdict] || statusText;
+      }
+      if (pos.positionExists && d?.verdict !== 'position-open') {
         statusText = 'Position active';
-      } else if (pos.statusText) {
+      } else if (!d?.verdict && pos.statusText) {
         statusText = pos.statusText;
       } else if (pos.lastAction === 'liquidated-detected' || pos.riskAlert === 'position-missing') {
         statusText = 'Liquidated - awaiting re-entry';
-      } else if ((pos.deployedUsd || 0) === 0 && !pos.entry) {
-        statusText = 'Collecting fees';
       }
 
       return {
