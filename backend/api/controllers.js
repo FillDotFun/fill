@@ -440,7 +440,7 @@ export async function getStats(_req, res) {
     // Manual offset accounts for early losses settled off-chain before the
     // trade-history ledger was tracking (keeps the site honest).
     const MANUAL_PNL_OFFSET_USD = -703;
-    const netPerpPnl = (realizedPnlUsd + livePositionPnlUsd) || MANUAL_PNL_OFFSET_USD;
+    const netPerpPnl = MANUAL_PNL_OFFSET_USD + realizedPnlUsd + livePositionPnlUsd;
 
     const totalBuybackEth = buybacks.reduce((sum, b) => sum + (b.amountEth || 0), 0);
 
